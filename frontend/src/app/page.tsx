@@ -191,7 +191,7 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className={activeTab === "chat" ? "flex-1 flex h-full overflow-hidden" : "flex-1 p-6 overflow-y-auto"}>
             {activeTab === "chat" && activeSession && (
               <ChatView
                 patient={activePatient}
