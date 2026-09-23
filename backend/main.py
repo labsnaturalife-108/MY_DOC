@@ -13,7 +13,7 @@ from .database import engine, Base, get_db
 from . import models, schemas
 from .parser import extract_text_from_file, parse_lab_metrics
 from .rag_engine import rag_engine
-from .llm_hub import llm_hub, AVAILABLE_MODELS
+from .llm_hub import llm_hub
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

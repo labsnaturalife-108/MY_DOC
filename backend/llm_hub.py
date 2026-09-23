@@ -18,6 +18,8 @@ STATIC_CLOUD_MODELS = [
     {"id": "demo-doctor", "name": "MY_DOC Demo (Встроенный ассистент)", "provider": "demo", "is_local": True},
 ]
 
+AVAILABLE_MODELS = STATIC_CLOUD_MODELS
+
 class LLMHub:
     def __init__(self):
         pass

@@ -31,9 +31,9 @@ echo "💻 Запуск интерфейса..."
 FRONTEND_PID=$!
 
 # 4. Ожидание запуска и открытие браузера
-echo "⏳ Проверка доступности интерфейса..."
-for i in {1..20}; do
-    if curl -s http://127.0.0.1:3000 >/dev/null 2>&1; then
+echo "⏳ Проверка доступности сервисов..."
+for i in {1..30}; do
+    if curl -s http://127.0.0.1:8000/api/health >/dev/null 2>&1 && curl -s http://127.0.0.1:3000 >/dev/null 2>&1; then
         break
     fi
     sleep 1
