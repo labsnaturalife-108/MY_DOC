@@ -203,6 +203,16 @@ export const api = {
     if (!res.ok) throw new Error("Failed to delete session");
   },
 
+  async updateChatSession(sessionId: number, data: { model_id?: string; provider?: string; title?: string }): Promise<ChatSession> {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update session");
+    return res.json();
+  },
+
   // Models & Settings
   async getModels(): Promise<AIModel[]> {
     const res = await fetch(`${API_BASE}/models`);

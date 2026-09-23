@@ -58,8 +58,29 @@ export const ChatView: React.FC<ChatViewProps> = ({
     try {
       const data = await api.getModels();
       setModels(data);
+      // Auto-select online local model if on demo
+      const onlineLM = data.find((m: any) => m.provider === "lmstudio" && m.id !== "demo-doctor" && m.id !== "lmstudio-auto");
+      const autoOption = data.find((m: any) => m.id === "lmstudio-auto" && m.is_online);
+      const targetLocal = onlineLM || autoOption;
+      
+      if ((session.model_id === "demo-doctor" || currentModelId === "demo-doctor") && targetLocal) {
+        setCurrentModelId(targetLocal.id);
+        api.updateChatSession(session.id, { model_id: targetLocal.id, provider: targetLocal.provider }).catch(() => {});
+      }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleModelChange = async (newId: string) => {
+    setCurrentModelId(newId);
+    const mObj = models.find((m) => m.id === newId);
+    if (mObj) {
+      try {
+        await api.updateChatSession(session.id, { model_id: newId, provider: mObj.provider });
+      } catch (err) {
+        console.error("Failed to update session model:", err);
+      }
     }
   };
 
@@ -192,7 +213,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             <div className="flex items-center gap-2">
               <select
                 value={currentModelId}
-                onChange={(e) => setCurrentModelId(e.target.value)}
+                onChange={(e) => handleModelChange(e.target.value)}
                 className="bg-zinc-950 border border-zinc-700 text-zinc-200 font-semibold text-xs rounded-xl px-2.5 py-1.5 outline-none focus:border-zinc-500 cursor-pointer"
               >
                 {models.map((m) => (

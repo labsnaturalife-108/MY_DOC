@@ -5,10 +5,7 @@ from typing import AsyncGenerator, List, Dict, Any, Optional
 DEFAULT_LMSTUDIO_URL = "http://localhost:1234/v1"
 DEFAULT_OLLAMA_URL = "http://localhost:11434/v1"
 
-# Preset model catalog
-AVAILABLE_MODELS = [
-    {"id": "lmstudio-auto", "name": "LM Studio (Текущая загруженная модель)", "provider": "lmstudio", "is_local": True},
-    {"id": "ollama-med", "name": "Ollama (Локально)", "provider": "ollama", "is_local": True},
+STATIC_CLOUD_MODELS = [
     {"id": "gpt-4o", "name": "OpenAI: GPT-4o", "provider": "openai", "is_local": False},
     {"id": "gpt-4o-mini", "name": "OpenAI: GPT-4o Mini", "provider": "openai", "is_local": False},
     {"id": "claude-3-5-sonnet", "name": "Anthropic: Claude 3.5 Sonnet", "provider": "anthropic", "is_local": False},
@@ -29,14 +26,65 @@ class LLMHub:
         """Checks if local LM Studio or Ollama is responding."""
         try:
             async with httpx.AsyncClient(timeout=2.0) as client:
-                res = await client.get(f"{url}/models")
+                res = await client.get(f"{url.rstrip('/')}/models")
                 if res.status_code == 200:
                     data = res.json()
-                    models = [m.get("id") for m in data.get("data", [])]
+                    models = [m.get("id") for m in data.get("data", []) if m.get("id")]
                     return {"online": True, "models": models}
         except Exception as e:
             return {"online": False, "error": str(e)}
         return {"online": False, "error": "Unknown status"}
+
+    async def get_models_list(self, lmstudio_url: str = DEFAULT_LMSTUDIO_URL, ollama_url: str = DEFAULT_OLLAMA_URL) -> List[Dict[str, Any]]:
+        """Returns dynamic list of models, detecting active LM Studio models first."""
+        models_list = []
+        
+        # 1. Check LM Studio
+        lm_status = await self.check_local_status(lmstudio_url)
+        if lm_status.get("online") and lm_status.get("models"):
+            for m_id in lm_status["models"]:
+                # skip embedding-only models in chat dropdown
+                if "embed" in m_id.lower():
+                    continue
+                models_list.append({
+                    "id": m_id,
+                    "name": f"🟢 LM Studio: {m_id}",
+                    "provider": "lmstudio",
+                    "is_local": True,
+                    "is_online": True
+                })
+            # Also add auto option
+            models_list.append({
+                "id": "lmstudio-auto",
+                "name": "🟢 LM Studio (Текущая активная модель)",
+                "provider": "lmstudio",
+                "is_local": True,
+                "is_online": True
+            })
+        else:
+            models_list.append({
+                "id": "lmstudio-auto",
+                "name": "⚪ LM Studio (Локально — офлайн)",
+                "provider": "lmstudio",
+                "is_local": True,
+                "is_online": False
+            })
+
+        # 2. Check Ollama
+        ollama_status = await self.check_local_status(ollama_url)
+        if ollama_status.get("online") and ollama_status.get("models"):
+            for m_id in ollama_status["models"]:
+                models_list.append({
+                    "id": m_id,
+                    "name": f"🟢 Ollama: {m_id}",
+                    "provider": "ollama",
+                    "is_local": True,
+                    "is_online": True
+                })
+
+        # 3. Add Cloud and Demo models
+        models_list.extend(STATIC_CLOUD_MODELS)
+        return models_list
 
     def build_system_prompt(self, patient_profile: Dict[str, Any], context_sources: List[Dict[str, Any]]) -> str:
         """Constructs an informed medical assistant system prompt with patient facts and RAG context."""
@@ -46,7 +94,8 @@ class LLMHub:
         
         prompt_parts = [
             "Вы — высококвалифицированный персональный медицинский ИИ-ассистент врача и пациента в системе 'MY_DOC'.",
-            "Ваша цель: анализировать жалобы, результаты обследований, анализы и литературу, предоставляя структурированные, научно обоснованные объяснения и рекомендации.",
+            "Ваша задача: детально анализировать жалобы, предоставленные медицинские документы, бланки лабораторных анализов и литературу.",
+            "Отвечайте на русском языке, структурированно, профессионально и понятно для пациента.",
             "",
             "=== КАРТОЧКА ПАЦИЕНТА ===",
             f"ФИО: {patient_profile.get('full_name')}",
@@ -55,13 +104,13 @@ class LLMHub:
             f"Группа крови: {patient_profile.get('blood_type', 'Не указана')}",
             f"КРИТИЧЕСКИЕ АЛЛЕРГИИ / НЕПЕРЕНОСИМОСТИ: {allergies}",
             f"Хронические заболевания: {chronic}",
-            f"Текущая медикаментозная терапия и БАД: {meds}",
+            f"Текущая терапия: {meds}",
             "",
-            "=== ПРАВИЛА БЕЗОПАСНОСТИ И ТОЧНОСТИ ===",
+            "=== ПРАВИЛА АНАЛИЗА ===",
             "1. Всегда учитывайте аллергии и текущие препараты пациента. Никогда не рекомендуйте препараты, вызывающие конфликт или аллергию.",
-            "2. Если данные из анализов или литературы присутствуют в контексте ниже — ссылайтесь на них, указывая документ и дату.",
-            "3. Четко разделяйте факты из анализов, выводы доказательной медицины и гипотезы.",
-            "4. В конце сложных рекомендаций мягко напоминайте о согласовании с лечащим врачом.",
+            "2. Внимательно изучите данные из анализов ниже (RAG). Назовите конкретные показатели, их значения, единицы измерения и референсные нормы.",
+            "3. Выделите любые отклонения (повышенные или пониженные маркеры) и объясните их клиническое значение.",
+            "4. В конце дайте четкие рекомендации и напомните о необходимости очной консультации с врачом.",
         ]
 
         if context_sources:
@@ -70,7 +119,7 @@ class LLMHub:
                 doc_name = source.get("filename", "Документ")
                 folder = source.get("folder_type", "исследование")
                 text = source.get("content", "").strip()
-                prompt_parts.append(f"\n[Источник {idx}: {doc_name} ({folder})]:\n{text}")
+                prompt_parts.append(f"\n[Документ {idx}: {doc_name} ({folder})]:\n{text}")
 
         return "\n".join(prompt_parts)
 
@@ -84,13 +133,26 @@ class LLMHub:
         api_keys: Dict[str, str],
         local_urls: Dict[str, str]
     ) -> AsyncGenerator[str, None]:
-        """Streams LLM tokens, falling back to smart demo mode if provider is not configured."""
+        """Streams LLM tokens, auto-detecting and routing to local LM Studio if available."""
         system_content = self.build_system_prompt(patient_profile, context_sources)
         full_messages = [{"role": "system", "content": system_content}] + messages
 
+        lmstudio_base = local_urls.get("lmstudio", DEFAULT_LMSTUDIO_URL)
+
+        # AUTO-ROUTING: If user was on demo-doctor or lmstudio, but LM Studio is online, USE LM STUDIO!
+        is_lmstudio_target = provider == "lmstudio" or model_id == "lmstudio-auto"
+        if not is_lmstudio_target and provider == "demo":
+            # Check if LM Studio is secretly online!
+            lm_check = await self.check_local_status(lmstudio_base)
+            if lm_check.get("online"):
+                is_lmstudio_target = True
+                provider = "lmstudio"
+                if lm_check.get("models"):
+                    model_id = lm_check["models"][0]
+
         # Handle LM Studio or Ollama (OpenAI-compatible)
-        if provider in ["lmstudio", "ollama"]:
-            base_url = local_urls.get(provider, DEFAULT_LMSTUDIO_URL if provider == "lmstudio" else DEFAULT_OLLAMA_URL)
+        if is_lmstudio_target or provider in ["lmstudio", "ollama"]:
+            base_url = local_urls.get(provider, lmstudio_base if provider == "lmstudio" else DEFAULT_OLLAMA_URL)
             endpoint = f"{base_url.rstrip('/')}/chat/completions"
             req_model = model_id if model_id not in ["lmstudio-auto", "ollama-med"] else "local-model"
             
@@ -102,11 +164,11 @@ class LLMHub:
             }
 
             try:
-                async with httpx.AsyncClient(timeout=60.0) as client:
+                async with httpx.AsyncClient(timeout=120.0) as client:
                     async with client.stream("POST", endpoint, json=payload) as response:
                         if response.status_code != 200:
                             err_body = await response.aread()
-                            yield f"⚠️ Ошибка вызова локальной модели ({response.status_code}): {err_body.decode('utf-8', errors='ignore')}"
+                            yield f"⚠️ Ошибка ответа локальной модели ({response.status_code}): {err_body.decode('utf-8', errors='ignore')}"
                             return
                         async for line in response.aiter_lines():
                             if line.startswith("data: "):
@@ -115,17 +177,19 @@ class LLMHub:
                                     break
                                 try:
                                     chunk = json.loads(data_str)
-                                    delta = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                    choice = chunk.get("choices", [{}])[0]
+                                    delta_obj = choice.get("delta", {})
+                                    delta = delta_obj.get("content") or delta_obj.get("reasoning_content") or ""
                                     if delta:
                                         yield delta
                                 except Exception:
                                     continue
                 return
             except Exception as e:
-                yield f"⚠️ Не удалось подключиться к {provider.upper()} по адресу {base_url}.\nУбедитесь, что сервер запущен и принимает запросы.\n\nТехническая ошибка: {str(e)}"
+                yield f"⚠️ Не удалось подключиться к LM Studio по адресу {base_url}.\nУбедитесь, что сервер включен в LM Studio.\n\nТехническая ошибка: {str(e)}"
                 return
 
-        # Handle OpenAI / DeepSeek / Grok (OpenAI standard format)
+        # Handle OpenAI / DeepSeek / Grok / Gemini / Qwen (OpenAI standard format)
         openai_providers = {
             "openai": ("https://api.openai.com/v1/chat/completions", api_keys.get("openai")),
             "deepseek": ("https://api.deepseek.com/chat/completions", api_keys.get("deepseek")),
@@ -137,7 +201,7 @@ class LLMHub:
         if provider in openai_providers:
             endpoint, api_key = openai_providers[provider]
             if not api_key:
-                yield f"⚠️ Для использования модели '{model_id}' требуется API-ключ {provider.upper()}.\nПожалуйста, укажите его в настройках (кнопка '⚙️ Настройки' вверху).\n\nПока вы можете переключиться на модель 'MY_DOC Demo' или запустить локальный LM Studio."
+                yield f"⚠️ Для использования модели '{model_id}' требуется API-ключ {provider.upper()}.\nПожалуйста, укажите его в настройках (кнопка '⚙️ Настройки' вверху).\n\nТакже вы можете запустить локальный LM Studio."
                 return
 
             headers = {
@@ -165,7 +229,9 @@ class LLMHub:
                                     break
                                 try:
                                     chunk = json.loads(data_str)
-                                    delta = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                    choice = chunk.get("choices", [{}])[0]
+                                    delta_obj = choice.get("delta", {})
+                                    delta = delta_obj.get("content") or delta_obj.get("reasoning_content") or ""
                                     if delta:
                                         yield delta
                                 except Exception:
@@ -175,7 +241,7 @@ class LLMHub:
                 yield f"⚠️ Ошибка связи с API {provider.upper()}: {str(e)}"
                 return
 
-        # Fallback / Built-in Demo Medical Assistant
+        # Fallback / Built-in Demo Medical Assistant (only when truly offline)
         last_user_msg = messages[-1]["content"] if messages else ""
         context_summary = f"В базе найдено {len(context_sources)} релевантных фрагментов документов." if context_sources else "Векторные документы не прикреплены к вопросу."
         
@@ -187,10 +253,9 @@ class LLMHub:
             f"- Учтены аллергии: **{patient_profile.get('allergies') or 'отсутствуют'}**\n"
             f"- Текущая терапия: {patient_profile.get('current_medications') or 'нет назначений'}\n\n"
             f"**Данные RAG:** {context_summary}\n\n"
-            f"💡 *Для полноценных клинических ответов вы можете подключить локальный LM Studio (без отправки данных в интернет) или добавить API-ключ в настройках.*"
+            f"💡 *Для полноценных клинических ответов выберите в выпадающем списке сверху вашу локальную модель из LM Studio (или настройте API-ключ в настройках).* "
         )
         
-        # Simulate streaming chunks
         import asyncio
         words = demo_reply.split(" ")
         for i in range(0, len(words), 3):

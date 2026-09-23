@@ -351,6 +351,21 @@ def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"success": True}
 
+@app.put("/api/chat/sessions/{session_id}", response_model=schemas.ChatSessionResponse)
+def update_chat_session(session_id: int, data: schemas.ChatSessionCreate, db: Session = Depends(get_db)):
+    session = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+    if data.model_id:
+        session.model_id = data.model_id
+    if data.provider:
+        session.provider = data.provider
+    if data.title:
+        session.title = data.title
+    db.commit()
+    db.refresh(session)
+    return session
+
 # Helper to fetch settings
 def get_all_settings_dict(db: Session):
     rows = db.query(models.AppSetting).all()
@@ -475,8 +490,11 @@ async def stream_chat_message(
 
 # --- Models & Settings ---
 @app.get("/api/models")
-def get_models():
-    return AVAILABLE_MODELS
+async def get_models(db: Session = Depends(get_db)):
+    settings = get_all_settings_dict(db)
+    lm_url = settings.get("url_lmstudio") or "http://localhost:1234/v1"
+    ol_url = settings.get("url_ollama") or "http://localhost:11434/v1"
+    return await llm_hub.get_models_list(lm_url, ol_url)
 
 @app.get("/api/settings/check-local")
 async def check_local_servers(

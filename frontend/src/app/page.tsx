@@ -76,8 +76,8 @@ export default function Home() {
         // Automatically create a default session for seamless start
         const newSession = await api.createChatSession(patientId, {
           title: "Первичная консультация",
-          model_id: "demo-doctor",
-          provider: "demo"
+          model_id: isLocalOnline ? "lmstudio-auto" : "demo-doctor",
+          provider: isLocalOnline ? "lmstudio" : "demo"
         });
         setChatSessions([newSession]);
         setActiveSessionId(newSession.id);
@@ -104,8 +104,8 @@ export default function Home() {
     try {
       const newSession = await api.createChatSession(activePatient.id, {
         title: "Консультация " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        model_id: "demo-doctor",
-        provider: "demo"
+        model_id: isLocalOnline ? "lmstudio-auto" : "demo-doctor",
+        provider: isLocalOnline ? "lmstudio" : "demo"
       });
       setChatSessions([newSession, ...chatSessions]);
       setActiveSessionId(newSession.id);
