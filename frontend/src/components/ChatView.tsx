@@ -495,7 +495,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         }`}
       >
         {/* Drawer Header */}
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/60">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/60 pr-24">
           <div className="flex items-center space-x-2">
             <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-250 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300">
               <BookOpen className="w-4 h-4" />

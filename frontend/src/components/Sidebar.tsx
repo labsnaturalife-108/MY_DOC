@@ -15,8 +15,7 @@ import {
   Stethoscope,
   HeartPulse,
   Sun,
-  Moon,
-  Languages
+  Moon
 } from "lucide-react";
 import { Patient, ChatSession } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -56,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeletePatient
 }) => {
   const { resolvedTheme, toggleTheme } = useTheme();
-  const { language, toggleLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <aside className="w-80 flex flex-col bg-white dark:bg-zinc-900/95 border-r border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 select-none transition-colors duration-150">
@@ -78,16 +77,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="flex items-center space-x-1">
-          {/* Language Switcher */}
-          <button
-            onClick={toggleLanguage}
-            title={t.sidebar.languageToggle}
-            className="flex items-center gap-1 px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg text-xs font-bold transition border border-zinc-200 dark:border-zinc-700/70"
-          >
-            <Languages className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="uppercase text-[11px] tracking-wider">{language}</span>
-          </button>
-
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}

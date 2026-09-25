@@ -13,7 +13,7 @@ import { UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-re
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function Home() {
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -202,6 +202,34 @@ export default function Home() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 relative">
+        {/* Top-Right Language Switcher */}
+        <div className="absolute top-3.5 right-4 z-40 flex items-center">
+          <div className="flex items-center bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-xl p-0.5 shadow-sm">
+            <button
+              onClick={() => setLanguage("ru")}
+              title="Русский язык"
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                language === "ru"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              RU
+            </button>
+            <button
+              onClick={() => setLanguage("en")}
+              title="English language"
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                language === "en"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              EN
+            </button>
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
