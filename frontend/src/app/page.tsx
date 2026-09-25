@@ -268,6 +268,7 @@ export default function Home() {
 
             {activeTab === "profile" && (
               <PatientCard
+                key={activePatient.id}
                 patient={activePatient}
                 onUpdate={(updated) => {
                   setActivePatient(updated);

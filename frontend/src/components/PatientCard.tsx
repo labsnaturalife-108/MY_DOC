@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   User, 
   Heart, 
@@ -29,6 +29,11 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, onUpdate, onD
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Patient>>({ ...patient });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setFormData({ ...patient });
+    setIsEditing(false);
+  }, [patient]);
 
   const getBmiBadge = (bmi?: number) => {
     if (!bmi) return null;
