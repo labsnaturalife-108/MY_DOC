@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Patient, Folder, DocumentItem, api } from "@/lib/api";
 import { DocumentViewerModal } from "./DocumentViewerModal";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DocumentFoldersProps {
   patient: Patient;
@@ -25,6 +26,7 @@ interface DocumentFoldersProps {
 }
 
 export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRefreshLabs, onNavigateToChat }) => {
+  const { language, t } = useLanguage();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -75,18 +77,20 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
 
     try {
       const res = await api.uploadDocument(patient.id, file, selectedFolderId);
-      setUploadResult(
-        `✅ Файл "${res.filename}" успешно векторизован в ChromaDB` +
-        (res.extracted_metrics_count > 0 ? ` • Извлечено биомаркеров: ${res.extracted_metrics_count}` : "")
-      );
+      const successMsg = language === "ru"
+        ? `✅ Файл "${res.filename}" успешно векторизован в ChromaDB` +
+          (res.extracted_metrics_count > 0 ? ` • Извлечено биомаркеров: ${res.extracted_metrics_count}` : "")
+        : `✅ File "${res.filename}" successfully vectorized in ChromaDB` +
+          (res.extracted_metrics_count > 0 ? ` • Extracted biomarkers: ${res.extracted_metrics_count}` : "");
+      setUploadResult(successMsg);
       // Reload docs
       const dList = await api.getDocuments(patient.id, selectedFolderId);
       setDocuments(dList);
       if (onRefreshLabs && res.extracted_metrics_count > 0) {
         onRefreshLabs();
       }
-    } catch (err) {
-      alert("Ошибка загрузки файла: " + err);
+    } catch (err: any) {
+      alert((language === "ru" ? "Ошибка загрузки файла: " : "File upload error: ") + (err.message || err));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -94,12 +98,12 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
   };
 
   const handleDeleteDoc = async (docId: number) => {
-    if (!confirm("Удалить этот документ и его векторные данные?")) return;
+    if (!confirm(t.folders.deleteConfirm)) return;
     try {
       await api.deleteDocument(patient.id, docId);
       setDocuments(documents.filter((d) => d.id !== docId));
-    } catch (err) {
-      alert("Ошибка удаления: " + err);
+    } catch (err: any) {
+      alert((language === "ru" ? "Ошибка удаления: " : "Delete error: ") + (err.message || err));
     }
   };
 
@@ -118,10 +122,29 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
     }
   };
 
+  const getFolderDisplayName = (f: Folder) => {
+    if (language === "ru") return f.name;
+    switch (f.folder_type) {
+      case "analyses":
+        return "Lab Reports";
+      case "researches":
+        return "Diagnostic Imaging";
+      case "notes":
+        return "Clinical Notes";
+      case "knowledge_base":
+        return "Medical Knowledge";
+      default:
+        return f.name;
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " Б";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " КБ";
-    return (bytes / (1024 * 1024)).toFixed(1) + " МБ";
+    const bUnit = language === "ru" ? "Б" : "B";
+    const kbUnit = language === "ru" ? "КБ" : "KB";
+    const mbUnit = language === "ru" ? "МБ" : "MB";
+    if (bytes < 1024) return `${bytes} ${bUnit}`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${kbUnit}`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} ${mbUnit}`;
   };
 
   return (
@@ -149,10 +172,12 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                 </span>
               </div>
               <h4 className={`text-sm font-semibold truncate ${isSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300'}`}>
-                {f.name}
+                {getFolderDisplayName(f)}
               </h4>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                {f.folder_type === "knowledge_base" ? "Статьи, книги, протоколы" : "Медицинские данные"}
+                {f.folder_type === "knowledge_base" 
+                  ? (language === "ru" ? "Статьи, книги, протоколы" : "Articles, guidelines, books") 
+                  : (language === "ru" ? "Медицинские данные" : "Clinical health data")}
               </p>
             </button>
           );
@@ -173,9 +198,11 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
           {uploading ? (
             <>
               <Loader2 className="w-10 h-10 text-zinc-600 dark:text-zinc-300 animate-spin mb-3" />
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Векторизация и извлечение данных...</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{t.folders.uploading}</p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Генерируются эмбеддинги для RAG и распознаются лабораторные биомаркеры
+                {language === "ru" 
+                  ? "Генерируются эмбеддинги для RAG и распознаются лабораторные биомаркеры" 
+                  : "Generating RAG vector embeddings & extracting lab biomarkers"}
               </p>
             </>
           ) : (
@@ -184,10 +211,10 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                 <UploadCloud className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Перетащите файл или нажмите для загрузки
+                {t.folders.dropzoneTitle}
               </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Поддерживаются PDF, TXT, MD. Файл автоматически попадет в векторную базу ChromaDB для ИИ
+                {t.folders.dropzoneHint}
               </p>
             </>
           )}
@@ -206,13 +233,13 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-            Документы в текущей папке ({documents.length})
+            {t.folders.fileList} ({documents.length})
           </h3>
         </div>
 
         {documents.length === 0 ? (
           <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 text-xs">
-            В этой папке пока нет файлов. Загрузите PDF-анализ или статью выше.
+            {t.folders.noFiles}
           </div>
         ) : (
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -232,7 +259,7 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-2">
                       <span>{formatFileSize(doc.file_size)}</span>
                       <span>•</span>
-                      <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                      <span>{new Date(doc.created_at).toLocaleDateString(language === "ru" ? "ru-RU" : "en-US")}</span>
                     </p>
                   </div>
                 </div>
@@ -241,21 +268,21 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                   <button
                     onClick={() => setViewingDoc(doc)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white text-xs font-medium border border-zinc-200 dark:border-zinc-700/80 transition shadow-sm"
-                    title="Посмотреть содержимое анализа"
+                    title={t.folders.viewContent}
                   >
                     <Eye className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-300" />
-                    <span>Просмотр</span>
+                    <span>{t.folders.viewContent}</span>
                   </button>
 
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-zinc-400" />
-                    Векторизован в RAG
+                    {language === "ru" ? "Векторизован в RAG" : "Vectorized in RAG"}
                   </span>
 
                   <button
                     onClick={() => handleDeleteDoc(doc.id)}
                     className="p-2 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition"
-                    title="Удалить файл"
+                    title={t.folders.deleteFile}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

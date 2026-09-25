@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Patient, ChatSession, ChatMessage, AIModel, api } from "@/lib/api";
 import { MedicalMarkdown } from "./MedicalMarkdown";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ChatViewProps {
   patient: Patient;
@@ -37,6 +38,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   prefillQuery,
   onClearPrefill,
 }) => {
+  const { language, t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [models, setModels] = useState<AIModel[]>([]);
@@ -48,7 +50,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // Right sidebar drawer state for RAG sources
   const [isSourcesDrawerOpen, setIsSourcesDrawerOpen] = useState(false);
   const [drawerSources, setDrawerSources] = useState<any[]>([]);
-  const [activeSourcesTitle, setActiveSourcesTitle] = useState("Использованные источники");
+  const [activeSourcesTitle, setActiveSourcesTitle] = useState(
+    language === "ru" ? "Использованные источники" : "Cited Sources"
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +81,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
     try {
       const data = await api.getModels();
       setModels(data);
-      // Auto-select online local model if on demo
       const onlineLM = data.find((m: any) => m.provider === "lmstudio" && m.id !== "demo-doctor" && m.id !== "lmstudio-auto");
       const autoOption = data.find((m: any) => m.id === "lmstudio-auto" && m.is_online);
       const targetLocal = onlineLM || autoOption;
@@ -96,7 +99,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
       const msgs = await api.getChatMessages(session.id);
       setMessages(msgs);
       
-      // Auto-set drawer sources from latest message with sources if available
       for (let i = msgs.length - 1; i >= 0; i--) {
         if (msgs[i].sources_json) {
           try {
@@ -147,7 +149,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setStreamingText("");
     setCurrentSources([]);
 
-    // Optimistically add user message
     const tempUserMsg: ChatMessage = {
       id: Date.now(),
       session_id: session.id,
@@ -169,7 +170,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Ошибка сервера: ${response.statusText}`);
+        throw new Error(`Server error: ${response.statusText}`);
       }
 
       const reader = response.body?.getReader();
@@ -215,10 +216,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
         }
       }
 
-      // Refresh final messages from DB
       await loadMessages();
     } catch (err: any) {
-      alert("Ошибка отправки сообщения: " + err.message);
+      alert((language === "ru" ? "Ошибка отправки: " : "Error sending message: ") + err.message);
     } finally {
       setStreaming(false);
       setStreamingText("");
@@ -232,24 +232,35 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
-  const quickPrompts = [
-    "Проанализируй мои последние анализы и выдели отклонения",
-    "Что в результатах УЗИ сосудов шеи?",
-    "Совместимы ли назначенные препараты с моими диагнозами?",
-  ];
+  const quickPrompts = language === "ru" 
+    ? [
+        "Проанализируй мои последние анализы и выдели отклонения",
+        "Что в результатах УЗИ сосудов шеи?",
+        "Совместимы ли назначенные препараты с моими диагнозами?",
+      ]
+    : [
+        "Analyze my recent lab tests and highlight abnormal findings",
+        "Summarize my ultrasound and imaging findings",
+        "Check compatibility of my current meds and diagnoses",
+      ];
 
   const getFolderLabel = (fType: string) => {
-    switch (fType) {
-      case "analyses":
-        return "Лабораторные анализы";
-      case "researches":
-        return "Исследования / УЗИ";
-      case "notes":
-        return "Консультации и выписки";
-      case "knowledge_base":
-        return "База знаний";
-      default:
-        return "Документ";
+    if (language === "ru") {
+      switch (fType) {
+        case "analyses": return "Лабораторные анализы";
+        case "researches": return "Исследования / УЗИ";
+        case "notes": return "Консультации и выписки";
+        case "knowledge_base": return "База знаний";
+        default: return "Документ";
+      }
+    } else {
+      switch (fType) {
+        case "analyses": return "Lab Reports";
+        case "researches": return "Diagnostics / Imaging";
+        case "notes": return "Clinical Notes";
+        case "knowledge_base": return "Knowledge Base";
+        default: return "Document";
+      }
     }
   };
 
@@ -264,7 +275,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <Bot className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block font-medium">Модель ИИ-доктора:</span>
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block font-medium">
+                {t.chat.activeModel}
+              </span>
               <div className="flex items-center gap-2">
                 <select
                   value={currentModelId}
@@ -273,7 +286,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 >
                   {models.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.name} {m.is_local ? "🏠 (Локально)" : "☁️ (Облако)"}
+                      {m.name} {m.is_local ? (language === "ru" ? "🏠 (Локально)" : "🏠 (Local)") : (language === "ru" ? "☁️ (Облако)" : "☁️ (Cloud)")}
                     </option>
                   ))}
                 </select>
@@ -287,7 +300,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     }`}
                   >
                     <Cpu className="w-3 h-3" />
-                    {isLocalOnline ? "LM Studio Online" : "Офлайн (Демо)"}
+                    {isLocalOnline ? t.sidebar.lmStudioOnline : t.sidebar.lmStudioOffline}
                   </span>
                 )}
               </div>
@@ -303,14 +316,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-300 dark:border-zinc-600 shadow-sm"
                   : "bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
               }`}
-              title="Открыть/закрыть боковую панель источников RAG"
+              title={language === "ru" ? "Открыть/закрыть боковую панель источников RAG" : "Toggle RAG context sources drawer"}
             >
               {isSourcesDrawerOpen ? (
                 <PanelRightClose className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
               ) : (
                 <PanelRightOpen className="w-3.5 h-3.5 text-zinc-400" />
               )}
-              <span>Источники RAG</span>
+              <span>{language === "ru" ? "Источники RAG" : "RAG Sources"}</span>
               {drawerSources.length > 0 && (
                 <span className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded-full text-[10px] font-mono text-zinc-800 dark:text-zinc-300">
                   {drawerSources.length}
@@ -329,11 +342,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
               </div>
               <div>
                 <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Медицинский ассистент MY_DOC готов к диалогу
+                  {language === "ru" ? "Медицинский ассистент MY_DOC готов к диалогу" : "MY_DOC Medical AI Assistant is Ready"}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
-                  Задайте любой вопрос по здоровью, анализам или методикам лечения. Все аллергии и
-                  загруженные исследования пациента учитываются автоматически.
+                  {language === "ru"
+                    ? "Задайте любой вопрос по здоровью, анализам или методикам лечения. Все аллергии и загруженные исследования пациента учитываются автоматически."
+                    : "Ask questions regarding symptoms, test results, or care plans. All patient allergies and clinical records are integrated seamlessly."}
                 </p>
               </div>
 
@@ -370,7 +384,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${
                     isUser
                       ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700"
-                      : "bg-zinc-100 dark:bg-zinc-850 border border-zinc-250 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 shadow-sm"
+                      : "bg-zinc-100 dark:bg-zinc-855 border border-zinc-250 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 shadow-sm"
                   }`}
                 >
                   {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -389,15 +403,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <MedicalMarkdown content={m.content} />
                   )}
 
-                  {/* Clean, compact Sources Trigger Button */}
                   {!isUser && parsedSources && parsedSources.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between">
                       <button
-                        onClick={() => openSourcesForMessage(parsedSources, `Источники ответа #${m.id}`)}
+                        onClick={() => openSourcesForMessage(parsedSources, language === "ru" ? `Источники ответа #${m.id}` : `Sources for response #${m.id}`)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white border border-zinc-250 dark:border-zinc-700 transition"
                       >
                         <BookOpen className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                        <span>Использованные источники ({parsedSources.length})</span>
+                        <span>{language === "ru" ? `Использованные источники (${parsedSources.length})` : `Cited Sources (${parsedSources.length})`}</span>
                       </button>
                       <span className="text-[10px] text-zinc-400 dark:text-zinc-500">RAG Context</span>
                     </div>
@@ -420,19 +433,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 ) : (
                   <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs">
                     <Loader2 className="w-4 h-4 animate-spin text-zinc-500 dark:text-zinc-400" />
-                    <span>Изучение результатов анализов и генерация ответа...</span>
+                    <span>{language === "ru" ? "Изучение результатов анализов и генерация ответа..." : "Analyzing patient records and generating response..."}</span>
                   </div>
                 )}
 
-                {/* Compact sources trigger for live streaming */}
                 {currentSources.length > 0 && (
                   <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-zinc-800/80">
                     <button
-                      onClick={() => openSourcesForMessage(currentSources, "Источники текущего ответа")}
+                      onClick={() => openSourcesForMessage(currentSources, language === "ru" ? "Источники текущего ответа" : "Current response sources")}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white border border-zinc-250 dark:border-zinc-700 transition"
                     >
                       <BookOpen className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                      <span>Найдено в базе ({currentSources.length})</span>
+                      <span>{language === "ru" ? `Найдено в базе (${currentSources.length})` : `Found in records (${currentSources.length})`}</span>
                     </button>
                   </div>
                 )}
@@ -451,13 +463,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Спросите доктора о здоровье ${patient.full_name.split(" ")[0]}...`}
+              placeholder={
+                language === "ru"
+                  ? `Спросите доктора о здоровье ${patient.full_name.split(" ")[0]}...`
+                  : `Ask doctor regarding health of ${patient.full_name.split(" ")[0]}...`
+              }
               className="w-full bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 text-xs sm:text-sm outline-none resize-none px-2 py-1"
             />
 
             <div className="flex items-center justify-between pt-1 px-1">
               <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                Enter — отправить, Shift+Enter — новая строка
+                {language === "ru" ? "Enter — отправить, Shift+Enter — новая строка" : "Enter to send, Shift+Enter for new line"}
               </span>
 
               <button
@@ -472,7 +488,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       </div>
 
-      {/* Right Slide-out Sidebar for Sources (Правый боковой слайдбар) */}
+      {/* Right Slide-out Sidebar for Sources */}
       <div
         className={`w-96 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/98 flex flex-col h-full shadow-2xl z-30 transition-all duration-300 ease-in-out shrink-0 ${
           isSourcesDrawerOpen ? "translate-x-0 mr-0" : "translate-x-full absolute right-0 top-0 bottom-0 pointer-events-none opacity-0"
@@ -486,10 +502,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
             <div>
               <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                Источники RAG
+                {language === "ru" ? "Источники RAG" : "RAG Sources"}
               </h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                {drawerSources.length} {drawerSources.length === 1 ? "документ" : "документа(ов)"}
+                {drawerSources.length} {language === "ru" ? "документ(ов)" : "document(s)"}
               </p>
             </div>
           </div>
@@ -497,7 +513,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <button
             onClick={() => setIsSourcesDrawerOpen(false)}
             className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-850 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg transition"
-            title="Закрыть панель"
+            title={t.common.close}
           >
             <X className="w-4 h-4" />
           </button>
@@ -508,7 +524,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           {drawerSources.length === 0 ? (
             <div className="py-16 text-center text-zinc-400 dark:text-zinc-500 text-xs">
               <FileText className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-700" />
-              Нет прикрепленных фрагментов документов
+              {language === "ru" ? "Нет прикрепленных фрагментов документов" : "No attached document excerpts"}
             </div>
           ) : (
             drawerSources.map((s: any, idx: number) => (
@@ -540,12 +556,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
         {/* Drawer Footer */}
         <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-          <span className="text-[11px]">Векторная база ChromaDB</span>
+          <span className="text-[11px]">ChromaDB Vector Store</span>
           <button
             onClick={() => setIsSourcesDrawerOpen(false)}
             className="px-3 py-1 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-300 hover:text-black dark:hover:text-white rounded-lg text-xs transition"
           >
-            Скрыть
+            {t.common.close}
           </button>
         </div>
       </div>

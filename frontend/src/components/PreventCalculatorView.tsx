@@ -21,6 +21,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Patient, api, PreventInputs, PreventRiskResult } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface PreventCalculatorViewProps {
   patient: Patient;
@@ -31,6 +32,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
   patient,
   onNavigateToChat
 }) => {
+  const { language, t } = useLanguage();
   const [loading, setLoading] = useState<boolean>(true);
   const [calculating, setCalculating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
       setRiskResult(data.risk);
     } catch (err: any) {
       console.error("Error loading PREVENT data:", err);
-      setError(err?.message || "Не удалось загрузить параметры из анализов");
+      setError(err?.message || (language === "ru" ? "Не удалось загрузить параметры из анализов" : "Failed to load parameters from reports"));
     } finally {
       setLoading(false);
     }
@@ -125,7 +127,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
       setRiskResult(result);
     } catch (err: any) {
       console.error("Error calculating risk:", err);
-      setError(err?.message || "Ошибка расчета риска");
+      setError(err?.message || (language === "ru" ? "Ошибка расчета риска" : "Error calculating risk"));
     } finally {
       setCalculating(false);
     }
@@ -174,12 +176,23 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
     };
   };
 
+  const getRiskCategoryLabel = (category?: string) => {
+    if (!category) return "";
+    if (language === "ru") return category;
+    const cat = category.toLowerCase();
+    if (cat.includes("низк") || cat.includes("low")) return t.prevent.riskCategories.low;
+    if (cat.includes("погран") || cat.includes("borderline")) return t.prevent.riskCategories.borderline;
+    if (cat.includes("умерен") || cat.includes("промежут") || cat.includes("intermediate")) return t.prevent.riskCategories.intermediate;
+    return t.prevent.riskCategories.high;
+  };
+
   const theme = getRiskTheme(riskResult?.risk_category);
-  const RiskIcon = theme.icon;
 
   const handleConsultDoctor = () => {
     if (!onNavigateToChat) return;
-    const query = `Рассчитай и проанализируй мой 10-летний риск по калькулятору AHA PREVENT™ 2023–2024 (Суммарный риск CVD: ${riskResult?.cvd_10yr ?? "—"}%, ASCVD: ${riskResult?.ascvd_10yr ?? "—"}%, СН: ${riskResult?.heart_failure_10yr ?? "—"}%). Учти мои параметры: Общий холестерин ${totalCholMmol} ммоль/л, ЛПВП ${hdlCholMmol} ммоль/л, САД ${systolicBp} мм рт. ст., eGFR ${egfr} мл/мин, а также факторы риска (${riskModifiers.join(", ") || "нет"}). Каковы целевые показатели ЛПНП и нужна ли терапия статинами согласно рекомендациям AHA/ACC?`;
+    const query = language === "ru"
+      ? `Рассчитай и проанализируй мой 10-летний риск по калькулятору AHA PREVENT™ 2023–2024 (Суммарный риск CVD: ${riskResult?.cvd_10yr ?? "—"}%, ASCVD: ${riskResult?.ascvd_10yr ?? "—"}%, СН: ${riskResult?.heart_failure_10yr ?? "—"}%). Учти мои параметры: Общий холестерин ${totalCholMmol} ммоль/л, ЛПВП ${hdlCholMmol} ммоль/л, САД ${systolicBp} мм рт. ст., eGFR ${egfr} мл/мин, а также факторы риска (${riskModifiers.join(", ") || "нет"}). Каковы целевые показатели ЛПНП и нужна ли терапия статинами согласно рекомендациям AHA/ACC?`
+      : `Please analyze my 10-year cardiovascular risk according to the AHA PREVENT™ 2023–2024 calculator (Total CVD Risk: ${riskResult?.cvd_10yr ?? "—"}%, ASCVD: ${riskResult?.ascvd_10yr ?? "—"}%, Heart Failure: ${riskResult?.heart_failure_10yr ?? "—"}%). My parameters: Total Cholesterol ${totalCholMmol} mmol/L, HDL ${hdlCholMmol} mmol/L, SBP ${systolicBp} mmHg, eGFR ${egfr} ml/min, and clinical risk factors (${riskModifiers.join(", ") || "none"}). What are the target LDL levels and is statin therapy indicated per AHA/ACC guidelines?`;
     onNavigateToChat(query);
   };
 
@@ -187,7 +200,11 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
     return (
       <div className="flex flex-col items-center justify-center min-h-[450px] space-y-4">
         <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
-        <p className="text-sm text-zinc-400">Анализ бланков и расчет кардиориска AHA PREVENT™...</p>
+        <p className="text-sm text-zinc-400">
+          {language === "ru" 
+            ? "Анализ бланков и расчет кардиориска AHA PREVENT™..." 
+            : "Parsing reports and computing AHA PREVENT™ cardiovascular risk..."}
+        </p>
       </div>
     );
   }
@@ -205,32 +222,42 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                    AHA PREVENT™ Calculator
+                    {t.prevent.title}
                   </h2>
                   <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                     AHA/ACC 2023–2024
                   </span>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Официальный 10-летний и 30-летний калькулятор суммарного сердечно-сосудистого риска
+                  {t.prevent.subtitle}
                 </p>
               </div>
             </div>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed pt-1">
-              Модель <strong className="text-zinc-800 dark:text-zinc-300">PREVENT</strong> (Predicting Risk of cardiovascular disease EVENTs) 
-              впервые объединяет оценку атеросклеротических осложнений (инфаркт, инсульт) с риском сердечной недостаточности (Heart Failure) 
-              и функцией почек (eGFR), обеспечивая точнейшую персонализацию терапии статинами и контроля давления.
+              {language === "ru" ? (
+                <>
+                  Модель <strong className="text-zinc-800 dark:text-zinc-300">PREVENT</strong> (Predicting Risk of cardiovascular disease EVENTs) 
+                  впервые объединяет оценку атеросклеротических осложнений (инфаркт, инсульт) с риском сердечной недостаточности (Heart Failure) 
+                  и функцией почек (eGFR), обеспечивая точнейшую персонализацию терапии статинами и контроля давления.
+                </>
+              ) : (
+                <>
+                  The <strong className="text-zinc-800 dark:text-zinc-300">PREVENT</strong> (Predicting Risk of cardiovascular disease EVENTs) 
+                  model integrates atherosclerotic complications (MI, ischemic stroke) with incident Heart Failure (HF) and kidney function (eGFR), 
+                  delivering state-of-the-art precision for statin and blood pressure management.
+                </>
+              )}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => loadPreventData()}
-              title="Заново извлечь лабораторные показатели из бланков PDF"
+              title={t.prevent.autoFillBtn}
               className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white text-xs font-medium flex items-center gap-2 transition shadow-sm"
             >
               <RotateCcw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-              Извлечь из анализов
+              {t.prevent.autoFillBtn}
             </button>
             <a
               href="https://professional.heart.org/en/guidelines-and-statements/prevent-calculator"
@@ -239,7 +266,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               className="px-3.5 py-2 rounded-xl bg-zinc-100/60 dark:bg-zinc-800/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              AHA Руководство
+              {language === "ru" ? "AHA Руководство" : "AHA Guidelines"}
             </a>
           </div>
         </div>
@@ -249,7 +276,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800/80 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
             <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Данные получены из документов:
+              {language === "ru" ? "Данные получены из документов:" : "Data extracted from documents:"}
             </span>
             {Object.entries(sourcesDetected).map(([param, fname]) => (
               <span 
@@ -272,11 +299,11 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             <div className="flex items-start justify-between mb-4">
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
-                  10-летний суммарный риск
+                  {language === "ru" ? "10-летний суммарный риск" : "10-Year Cumulative Risk"}
                 </span>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <Heart className="w-4 h-4 text-rose-500" />
-                  Total CVD Risk
+                  {t.prevent.totalCvd}
                 </h3>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-xs font-bold border font-mono ${theme.badge}`}>
@@ -288,7 +315,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               <span className="text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white font-mono">
                 {riskResult.cvd_10yr}%
               </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">вероятность за 10 лет</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {language === "ru" ? "вероятность за 10 лет" : "10-year probability"}
+              </span>
             </div>
 
             {/* Gauge progress bar */}
@@ -300,8 +329,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             </div>
 
             <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-snug">
-              Категория: <strong className="text-zinc-900 dark:text-white">{riskResult.risk_category}</strong>. 
-              Включает инфаркт, инсульт и сердечную недостаточность.
+              {language === "ru" ? "Категория: " : "Category: "}
+              <strong className="text-zinc-900 dark:text-white">{getRiskCategoryLabel(riskResult.risk_category)}</strong>. 
+              {" "}{t.prevent.totalCvdDesc}.
             </p>
           </div>
 
@@ -310,15 +340,15 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             <div className="flex items-start justify-between mb-4">
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
-                  10-летний риск атеросклероза
+                  {language === "ru" ? "10-летний риск атеросклероза" : "10-Year Atherosclerotic Risk"}
                 </span>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <Activity className="w-4 h-4 text-amber-500" />
-                  ASCVD Risk
+                  {t.prevent.ascvd}
                 </h3>
               </div>
               <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 text-[11px] font-mono border">
-                Инфаркт / Инсульт
+                {language === "ru" ? "Инфаркт / Инсульт" : "MI / Stroke"}
               </span>
             </div>
 
@@ -326,7 +356,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               <span className="text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white font-mono">
                 {riskResult.ascvd_10yr}%
               </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">ишемические события</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {language === "ru" ? "ишемические события" : "ischemic events"}
+              </span>
             </div>
 
             <div className="w-full bg-zinc-200/80 dark:bg-zinc-800/80 rounded-full h-2 mb-3 overflow-hidden">
@@ -337,7 +369,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             </div>
 
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-snug">
-              Первичный риск нефатального инфаркта миокарда, фатального исхода ИБС или ишемического инсульта.
+              {t.prevent.ascvdDesc}
             </p>
           </div>
 
@@ -346,15 +378,15 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             <div className="flex items-start justify-between mb-4">
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
-                  Сердечная недостаточность
+                  {language === "ru" ? "Сердечная недостаточность" : "Heart Failure (10-Yr)"}
                 </span>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <Droplets className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  Heart Failure (10 лет)
+                  {t.prevent.heartFailure}
                 </h3>
               </div>
               <span className="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20 text-[11px] font-mono border">
-                ХСН
+                HF
               </span>
             </div>
 
@@ -362,12 +394,16 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               <span className="text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white font-mono">
                 {riskResult.heart_failure_10yr}%
               </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">риск декомпенсации</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {language === "ru" ? "риск декомпенсации" : "incident risk"}
+              </span>
             </div>
 
             {/* 30-Year Forecast Preview */}
             <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between text-xs">
-              <span className="text-zinc-500 dark:text-zinc-400">30-летний горизонт:</span>
+              <span className="text-zinc-500 dark:text-zinc-400">
+                {language === "ru" ? "30-летний горизонт:" : "30-Year Lifetime Horizon:"}
+              </span>
               <div className="flex items-center gap-2 font-mono">
                 <span className="text-zinc-700 dark:text-zinc-300">CVD: <strong className="text-zinc-900 dark:text-white">{riskResult.cvd_30yr ?? "—"}%</strong></span>
                 <span className="text-zinc-300 dark:text-zinc-600">|</span>
@@ -384,7 +420,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-              Выявлены клинические усилители риска (AHA/ACC Risk Enhancers):
+              {language === "ru" ? "Выявлены клинические усилители риска (AHA/ACC Risk Enhancers):" : "Identified AHA/ACC Clinical Risk Enhancers:"}
             </h4>
             <ul className="text-xs text-amber-800 dark:text-amber-300/90 list-disc list-inside space-y-0.5">
               {riskModifiers.map((mod, i) => (
@@ -392,9 +428,19 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               ))}
             </ul>
             <p className="text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
-              Примечание эксперта: Согласно руководству AHA/ACC 2023, наличие визуализированного субклинического атеросклероза 
-              (бляшки в сонных артериях) или повышенного уровня Lp(a) реклассифицирует пациента в группу высокого приоритета 
-              для медикаментозной коррекции липидов (статины), даже если 10-летний базовый балл находится в диапазоне низкого или умеренного риска.
+              {language === "ru" ? (
+                <>
+                  Примечание эксперта: Согласно руководству AHA/ACC 2023, наличие визуализированного субклинического атеросклероза 
+                  (бляшки в сонных артериях) или повышенного уровня Lp(a) реклассифицирует пациента в группу высокого приоритета 
+                  для медикаментозной коррекции липидов (статины), даже если 10-летний базовый балл находится в диапазоне низкого или умеренного риска.
+                </>
+              ) : (
+                <>
+                  Expert Note: Per 2023 AHA/ACC guidelines, presence of imaged subclinical atherosclerosis 
+                  (carotid plaques) or elevated Lp(a) reclassifies patient into a high-priority category 
+                  for lipid-lowering therapy (statins), even when 10-year score falls into borderline or intermediate risk.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -406,10 +452,12 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           <div>
             <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <Scale className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-              Клинические параметры для расчета
+              {t.prevent.parametersTitle}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Вы можете изменить значения параметров, чтобы оценить эффект снижения давления или холестерина
+              {language === "ru" 
+                ? "Вы можете изменить значения параметров, чтобы оценить эффект снижения давления или холестерина" 
+                : "Modify values dynamically to observe the clinical benefit of lowering blood pressure or cholesterol"}
             </p>
           </div>
           <button
@@ -420,12 +468,12 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             {calculating ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Расчет...
+                {t.common.loading}
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5" />
-                Пересчитать риск
+                {t.prevent.calculateBtn}
               </>
             )}
           </button>
@@ -435,7 +483,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Sex */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Пол пациента</label>
+            <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.prevent.sex}</label>
             <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
               <button
                 type="button"
@@ -446,7 +494,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                     : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                 }`}
               >
-                Мужской
+                {t.common.male}
               </button>
               <button
                 type="button"
@@ -457,7 +505,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                     : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                 }`}
               >
-                Женский
+                {t.common.female}
               </button>
             </div>
           </div>
@@ -465,8 +513,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Age */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Возраст (лет)</label>
-              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{age} лет</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.prevent.age}</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{age} {t.common.yearsOld}</span>
             </div>
             <input
               type="number"
@@ -485,9 +533,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Total Cholesterol */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Общий холестерин</label>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.prevent.totalChol}</label>
               <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
-                {(totalCholMmol * 38.67).toFixed(0)} мг/дл
+                {(totalCholMmol * 38.67).toFixed(0)} mg/dL
               </span>
             </div>
             <div className="relative">
@@ -500,7 +548,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
               <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
-                ммоль/л
+                mmol/L
               </span>
             </div>
           </div>
@@ -508,9 +556,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* HDL Cholesterol */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Холестерин ЛПВП (HDL)</label>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.prevent.hdlChol}</label>
               <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
-                {(hdlCholMmol * 38.67).toFixed(0)} мг/дл
+                {(hdlCholMmol * 38.67).toFixed(0)} mg/dL
               </span>
             </div>
             <div className="relative">
@@ -523,7 +571,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
               <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
-                ммоль/л
+                mmol/L
               </span>
             </div>
           </div>
@@ -531,8 +579,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Systolic BP */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Систолическое АД</label>
-              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">САД</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.prevent.sbp}</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">SBP</span>
             </div>
             <div className="relative">
               <input
@@ -543,7 +591,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
               <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
-                мм рт. ст.
+                mmHg
               </span>
             </div>
           </div>
@@ -551,8 +599,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* BMI */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Индекс массы тела (ИМТ)</label>
-              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">кг/м²</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.patientCard.bmi}</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">kg/m²</span>
             </div>
             <input
               type="number"
@@ -567,8 +615,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* eGFR / Creatinine */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">СКФ (eGFR CKD-EPI)</label>
-              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{creatinineUmol} мкмоль/л</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{t.prevent.egfr}</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{creatinineUmol} µmol/L</span>
             </div>
             <div className="relative">
               <input
@@ -580,7 +628,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
               <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
-                мл/мин/1.73м²
+                ml/min
               </span>
             </div>
           </div>
@@ -588,8 +636,10 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Creatinine */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Креатинин сыворотки</label>
-              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">мкмоль/л</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                {language === "ru" ? "Креатинин сыворотки" : "Serum Creatinine"}
+              </label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">µmol/L</span>
             </div>
             <input
               type="number"
@@ -617,8 +667,10 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Сахарный диабет</p>
-              <p className="text-[11px] text-zinc-500">Гликемический статус</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{t.prevent.diabetes}</p>
+              <p className="text-[11px] text-zinc-500">
+                {language === "ru" ? "Гликемический статус" : "Glycemic status"}
+              </p>
             </div>
           </label>
 
@@ -635,8 +687,10 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Курение</p>
-              <p className="text-[11px] text-zinc-500">Текущий курильщик</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{t.prevent.smoker}</p>
+              <p className="text-[11px] text-zinc-500">
+                {language === "ru" ? "Текущий курильщик" : "Tobacco use"}
+              </p>
             </div>
           </label>
 
@@ -653,8 +707,10 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Гипотензивные</p>
-              <p className="text-[11px] text-zinc-500">Прием препаратов от АД</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{t.prevent.antihypertensive}</p>
+              <p className="text-[11px] text-zinc-500">
+                {language === "ru" ? "Прием препаратов от АД" : "Blood pressure therapy"}
+              </p>
             </div>
           </label>
 
@@ -671,8 +727,10 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Статины / Терапия</p>
-              <p className="text-[11px] text-zinc-500">Липидоснижающие препараты</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{t.prevent.statins}</p>
+              <p className="text-[11px] text-zinc-500">
+                {language === "ru" ? "Липидоснижающие препараты" : "Lipid-lowering therapy"}
+              </p>
             </div>
           </label>
         </div>
@@ -686,7 +744,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-zinc-300" />
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Клинические рекомендации по гайдлайнам AHA/ACC 2023–2024
+                {language === "ru" ? "Клинические рекомендации по гайдлайнам AHA/ACC 2023–2024" : "AHA/ACC 2023–2024 Clinical Guidelines & Care Pathways"}
               </h3>
             </div>
 
@@ -700,7 +758,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             </div>
 
             <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800/80 text-[11px] text-zinc-500">
-              * Расчет риска носит информационный характер и предназначен для содействия врачу в рамках совместного принятия клинических решений (Shared Decision-Making).
+              {language === "ru" 
+                ? "* Расчет риска носит информационный характер и предназначен для содействия врачу в рамках совместного принятия клинических решений (Shared Decision-Making)." 
+                : "* Cardiovascular risk calculation is intended for shared clinical decision-making and does not substitute for physician evaluation."}
             </div>
           </div>
 
@@ -711,10 +771,12 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 <MessageSquare className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Консультация с ИИ-доктором
+                {t.prevent.discussInChat}
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Передайте вычисленные параметры риска калькулятора PREVENT в диалоговое окно для полного клинического разбора с учетом всех анализов, УЗИ и индивидуальной тактики.
+                {language === "ru" 
+                  ? "Передайте вычисленные параметры риска калькулятора PREVENT в диалоговое окно для полного клинического разбора с учетом всех анализов, УЗИ и индивидуальной тактики." 
+                  : "Forward calculated PREVENT risk parameters into the AI doctor chat for an in-depth clinical consultation incorporating imaging and lab history."}
               </p>
             </div>
 
@@ -723,7 +785,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               className="mt-6 w-full py-3 px-4 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
             >
               <Sparkles className="w-4 h-4" />
-              Разобрать результат в чате
+              {t.prevent.discussInChat}
             </button>
           </div>
         </div>

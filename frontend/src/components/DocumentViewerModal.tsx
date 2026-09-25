@@ -10,14 +10,15 @@ import {
   Activity, 
   Sparkles, 
   Loader2, 
-  Download,
-  AlertCircle,
-  Eye,
-  CheckCircle2,
-  Calendar,
-  Layers
+  Download, 
+  AlertCircle, 
+  Eye, 
+  CheckCircle2, 
+  Calendar, 
+  Layers 
 } from "lucide-react";
 import { DocumentItem, DocumentDetail, api } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DocumentViewerModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   document: docItem,
   onNavigateToChat
 }) => {
+  const { language, t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<DocumentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +58,6 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       setError(null);
       const data = await api.getDocumentDetails(patientId, docId);
       setDetail(data);
-      // If no text, but is image/pdf, we can default to file tab if preferred
       if (!data.extracted_text && (data.file_type === "pdf" || ["png", "jpg", "jpeg", "webp"].includes(data.file_type))) {
         setActiveTab("file");
       } else {
@@ -64,7 +65,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       }
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || "Не удалось загрузить содержимое документа");
+      setError(err?.message || (language === "ru" ? "Не удалось загрузить содержимое документа" : "Failed to load document content"));
     } finally {
       setLoading(false);
     }
@@ -86,15 +87,20 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
   const handleAskDoctor = () => {
     if (!onNavigateToChat) return;
-    const query = `Пожалуйста, сделай подробный профессиональный врачебный разбор документа "${docItem.filename}". Объясни все найденные показатели, отклонения от нормы и клиническое значение для моего состояния.`;
+    const query = language === "ru"
+      ? `Пожалуйста, сделай подробный профессиональный врачебный разбор документа "${docItem.filename}". Объясни все найденные показатели, отклонения от нормы и клиническое значение для моего состояния.`
+      : `Please provide a thorough, professional physician analysis of the document "${docItem.filename}". Explain all detected biomarkers, deviations from reference norms, and clinical relevance for my overall health.`;
     onClose();
     onNavigateToChat(query);
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " Б";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " КБ";
-    return (bytes / (1024 * 1024)).toFixed(1) + " МБ";
+    const bUnit = language === "ru" ? "Б" : "B";
+    const kbUnit = language === "ru" ? "КБ" : "KB";
+    const mbUnit = language === "ru" ? "МБ" : "MB";
+    if (bytes < 1024) return `${bytes} ${bUnit}`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${kbUnit}`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} ${mbUnit}`;
   };
 
   return (
@@ -121,12 +127,12 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
-                  {new Date(docItem.created_at).toLocaleDateString()}
+                  {new Date(docItem.created_at).toLocaleDateString(language === "ru" ? "ru-RU" : "en-US")}
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                   <CheckCircle2 className="w-3 h-3" />
-                  Проиндексирован в RAG
+                  {language === "ru" ? "Проиндексирован в RAG" : "Indexed in RAG"}
                 </span>
               </div>
             </div>
@@ -137,7 +143,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               href={fileUrl}
               target="_blank"
               rel="noreferrer"
-              title="Открыть оригинал в новой вкладке"
+              title={language === "ru" ? "Открыть оригинал в новой вкладке" : "Open original in new tab"}
               className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-700/80 transition"
             >
               <ExternalLink className="w-4 h-4" />
@@ -163,7 +169,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              Распознанный текст (OCR / RAG)
+              {language === "ru" ? "Распознанный текст (OCR / RAG)" : "Extracted Text (OCR / RAG)"}
             </button>
 
             <button
@@ -175,7 +181,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               }`}
             >
               <Activity className="w-3.5 h-3.5" />
-              Биомаркеры
+              {language === "ru" ? "Биомаркеры" : "Biomarkers"}
               {detail?.metrics && detail.metrics.length > 0 && (
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono">
                   {detail.metrics.length}
@@ -193,7 +199,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                Оригинал бланка
+                {language === "ru" ? "Оригинал бланка" : "Original File"}
               </button>
             )}
           </div>
@@ -202,17 +208,19 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             <button
               onClick={handleCopyText}
               className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-800 transition"
-              title="Скопировать распознанный текст"
+              title={language === "ru" ? "Скопировать распознанный текст" : "Copy extracted text"}
             >
               {copied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Скопировано</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    {language === "ru" ? "Скопировано" : "Copied"}
+                  </span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Копировать</span>
+                  <span>{language === "ru" ? "Копировать" : "Copy"}</span>
                 </>
               )}
             </button>
@@ -224,7 +232,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center space-y-3">
               <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Загрузка содержимого анализа...</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">{t.common.loading}</p>
             </div>
           ) : error ? (
             <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
@@ -239,10 +247,12 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80">
                     <span className="flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                      Этот текст извлечён модулем OCR и проиндексирован в базе знаний (ChromaDB) для ИИ.
+                      {language === "ru" 
+                        ? "Этот текст извлечён модулем OCR и проиндексирован в базе знаний (ChromaDB) для ИИ." 
+                        : "This text was extracted by OCR and vectorized into the ChromaDB RAG knowledge base."}
                     </span>
                     <span className="font-mono text-zinc-400 dark:text-zinc-500">
-                      {detail?.extracted_text?.length || 0} симв.
+                      {detail?.extracted_text?.length || 0} {language === "ru" ? "симв." : "chars"}
                     </span>
                   </div>
 
@@ -252,7 +262,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     </div>
                   ) : (
                     <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 text-xs">
-                      Текстовое содержимое не было распознано или файл пуст.
+                      {language === "ru" 
+                        ? "Текстовое содержимое не было распознано или файл пуст." 
+                        : "No text content detected or file is empty."}
                     </div>
                   )}
                 </div>
@@ -266,12 +278,12 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                       <table className="w-full text-left text-xs">
                         <thead className="bg-zinc-100 dark:bg-zinc-950/80 text-zinc-600 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800 uppercase tracking-wider text-[10px]">
                           <tr>
-                            <th className="py-2.5 px-4">Показатель</th>
-                            <th className="py-2.5 px-4">Значение</th>
-                            <th className="py-2.5 px-4">Единицы</th>
-                            <th className="py-2.5 px-4">Норма (референс)</th>
-                            <th className="py-2.5 px-4">Статус</th>
-                            <th className="py-2.5 px-4">Дата</th>
+                            <th className="py-2.5 px-4">{language === "ru" ? "Показатель" : "Biomarker"}</th>
+                            <th className="py-2.5 px-4">{t.common.value}</th>
+                            <th className="py-2.5 px-4">{t.common.unit}</th>
+                            <th className="py-2.5 px-4">{t.common.reference}</th>
+                            <th className="py-2.5 px-4">{language === "ru" ? "Статус" : "Status"}</th>
+                            <th className="py-2.5 px-4">{t.common.date}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80 font-mono">
@@ -303,17 +315,17 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                                 <td className="py-2.5 px-4">
                                   {isHigh && (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20">
-                                      ПОВЫШЕН
+                                      {t.common.high.toUpperCase()}
                                     </span>
                                   )}
                                   {isLow && (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
-                                      СНИЖЕН
+                                      {t.common.low.toUpperCase()}
                                     </span>
                                   )}
                                   {isNormal && (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
-                                      В НОРМЕ
+                                      {t.common.normal.toUpperCase()}
                                     </span>
                                   )}
                                 </td>
@@ -328,9 +340,13 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     </div>
                   ) : (
                     <div className="py-12 text-center text-zinc-400 text-xs space-y-1">
-                      <p className="font-semibold text-zinc-700 dark:text-zinc-300">Лабораторные нормы не выделены автоматически</p>
+                      <p className="font-semibold text-zinc-700 dark:text-zinc-300">
+                        {language === "ru" ? "Лабораторные нормы не выделены автоматически" : "No lab biomarkers auto-extracted"}
+                      </p>
                       <p className="text-zinc-500">
-                        Возможно, это инструментальное исследование (УЗИ, ЭКГ) или консультативное заключение. Полный текст доступен на вкладке «Распознанный текст».
+                        {language === "ru" 
+                          ? "Возможно, это инструментальное исследование (УЗИ, ЭКГ) или консультативное заключение. Полный текст доступен на вкладке «Распознанный текст»." 
+                          : "This might be an imaging report (Ultrasound, ECG, CT) or medical summary. Raw text is available under 'Extracted Text'."}
                       </p>
                     </div>
                   )}
@@ -341,7 +357,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               {activeTab === "file" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 pb-1">
-                    <span>Оригинал загруженного документа</span>
+                    <span>{language === "ru" ? "Оригинал загруженного документа" : "Original uploaded report"}</span>
                     <a
                       href={fileUrl}
                       target="_blank"
@@ -349,7 +365,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                       className="text-xs text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1 transition"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      Скачать файл
+                      {t.common.download}
                     </a>
                   </div>
 
@@ -381,7 +397,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         {/* Footer Actions */}
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center sm:text-left">
-            Данные используются ИИ-ассистентом для генерации персональных заключений.
+            {language === "ru" 
+              ? "Данные используются ИИ-ассистентом для генерации персональных заключений." 
+              : "Data is utilized by the Medical AI assistant for personalized clinical insights."}
           </p>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto">
@@ -391,7 +409,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 className="flex-1 sm:flex-none px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Спросить у ИИ об этом анализе
+                {language === "ru" ? "Спросить у ИИ об этом анализе" : "Ask AI Doctor about this report"}
               </button>
             )}
 
@@ -399,7 +417,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               onClick={onClose}
               className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white font-medium rounded-xl text-xs transition"
             >
-              Закрыть
+              {t.common.close}
             </button>
           </div>
         </div>

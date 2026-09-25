@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 export const metadata: Metadata = {
-  title: "MY_DOC — Личный медицинский AI-ассистент",
+  title: "MY_DOC — Личный медицинский AI-ассистент / Medical AI Assistant",
   description: "Интеллектуальная система ведения пациентов, анализа исследований и мультимодельный медицинский чат",
 };
 
@@ -37,7 +38,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-150">
         <ThemeProvider>
-          {children}
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

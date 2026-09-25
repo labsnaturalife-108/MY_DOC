@@ -33,6 +33,7 @@ import {
 } from "recharts";
 import { Patient, LabMetric, api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface LabChartsProps {
   patient: Patient;
@@ -48,78 +49,9 @@ interface PanelConfig {
   matchPatterns: string[];
 }
 
-const PANELS: PanelConfig[] = [
-  {
-    id: "all",
-    name: "Все показатели",
-    shortName: "Все",
-    icon: Activity,
-    goal: "Сводный мониторинг всех обнаруженных в анализах биомаркеров пациента.",
-    description: "Полная картина лабораторных исследований по датам сдачи.",
-    matchPatterns: [],
-  },
-  {
-    id: "cbc",
-    name: "Complete Blood Count (CBC) — Общий анализ крови",
-    shortName: "CBC (ОАК)",
-    icon: Droplet,
-    goal: "Скрининг на анемию, скрытые воспалительные процессы, инфекции и заболевания системы крови.",
-    description: "Эритроциты (RBC), лейкоциты (WBC), тромбоциты (PLT), гемоглобин (Hb), гематокрит (HCT), СОЭ.",
-    matchPatterns: ["Гемоглобин", "Эритроциты", "Лейкоциты (WBC)", "Тромбоциты", "Гематокрит", "СОЭ"],
-  },
-  {
-    id: "cmp",
-    name: "Comprehensive Metabolic Panel (CMP) — Метаболическая панель",
-    shortName: "CMP (14 показателей)",
-    icon: FlaskConical,
-    goal: "Комплексная оценка функции почек, печени, белкового обмена, баланса электролитов и глюкозы.",
-    description: "Глюкоза, Креатинин, Мочевина (BUN), eGFR (СКФ), АЛТ, АСТ, ЩФ (ALP), Билирубин, Общий белок, Альбумин, Натрий, Калий, Хлориды, Кальций.",
-    matchPatterns: [
-      "Глюкоза", "Креатинин", "Мочевина", "eGFR", "АЛТ", "АСТ", 
-      "Щелочная фосфатаза", "билирубин", "Общий белок", "Альбумин", 
-      "Натрий", "Калий", "Хлориды", "Кальций"
-    ],
-  },
-  {
-    id: "lipid",
-    name: "Lipid Panel — Липидограмма (Риски ССЗ)",
-    shortName: "Липидограмма",
-    icon: Heart,
-    goal: "Оценка липидного профиля, рисков атеросклероза, ишемической болезни сердца и сосудистых осложнений.",
-    description: "Общий холестерин, ЛПНП (LDL), ЛПВП (HDL), Триглицериды, Липопротеин (a).",
-    matchPatterns: ["холестерин", "ЛПНП", "ЛПВП", "Триглицериды", "Липопротеин"],
-  },
-  {
-    id: "diabetes",
-    name: "Диабет и углеводный обмен (HbA1c & Глюкоза)",
-    shortName: "HbA1c / Сахар",
-    icon: Activity,
-    goal: "Оценка среднего уровня глюкозы за последние 3 месяца, ранняя диагностика предиабета и сахарного диабета.",
-    description: "Гликированный гемоглобин (HbA1c), Глюкоза натощак.",
-    matchPatterns: ["Гликированный", "HbA1c", "Глюкоза"],
-  },
-  {
-    id: "urinalysis",
-    name: "Urinalysis (UA) — Общий анализ мочи",
-    shortName: "Анализ мочи (UA)",
-    icon: Dna,
-    goal: "Скрининг патологии почек, мочевыводящих путей, метаболических нарушений и скрытого воспаления.",
-    description: "Относительная плотность, pH мочи, лейкоциты, эритроциты, белок в моче.",
-    matchPatterns: ["мочи", "Относительная плотность", "Белок в моче"],
-  },
-  {
-    id: "other",
-    name: "Другие ключевые биомаркеры",
-    shortName: "Другие маркеры",
-    icon: ShieldAlert,
-    goal: "Мониторинг депо железа, витаминного статуса, маркеров воспаления и функции щитовидной железы.",
-    description: "Ферритин, Витамин D (25-OH), С-реактивный белок (СРБ), Мочевая кислота, ТТГ, Т4 свободный.",
-    matchPatterns: ["Ферритин", "Витамин", "СРБ", "Мочевая кислота", "ТТГ", "Т4"],
-  },
-];
-
 export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
   const { resolvedTheme } = useTheme();
+  const { language, t } = useLanguage();
   const isDark = resolvedTheme === "dark";
 
   const [metrics, setMetrics] = useState<LabMetric[]>([]);
@@ -138,6 +70,90 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
     record_date: new Date().toISOString().split("T")[0],
     notes: ""
   });
+
+  const panels: PanelConfig[] = useMemo(() => [
+    {
+      id: "all",
+      name: t.labs.panels.all.name,
+      shortName: t.labs.panels.all.shortName,
+      icon: Activity,
+      goal: t.labs.panels.all.goal,
+      description: t.labs.panels.all.description,
+      matchPatterns: [],
+    },
+    {
+      id: "cbc",
+      name: t.labs.panels.cbc.name,
+      shortName: t.labs.panels.cbc.shortName,
+      icon: Droplet,
+      goal: t.labs.panels.cbc.goal,
+      description: t.labs.panels.cbc.description,
+      matchPatterns: [
+        "Гемоглобин", "Эритроциты", "Лейкоциты", "Тромбоциты", "Гематокрит", "СОЭ",
+        "Hemoglobin", "RBC", "WBC", "Platelet", "Hematocrit", "ESR"
+      ],
+    },
+    {
+      id: "cmp",
+      name: t.labs.panels.cmp.name,
+      shortName: t.labs.panels.cmp.shortName,
+      icon: FlaskConical,
+      goal: t.labs.panels.cmp.goal,
+      description: t.labs.panels.cmp.description,
+      matchPatterns: [
+        "Глюкоза", "Креатинин", "Мочевина", "eGFR", "АЛТ", "АСТ", 
+        "Щелочная фосфатаза", "билирубин", "Общий белок", "Альбумин", 
+        "Натрий", "Калий", "Хлориды", "Кальций",
+        "Glucose", "Creatinine", "BUN", "ALT", "AST", "ALP", "Bilirubin", 
+        "Protein", "Albumin", "Sodium", "Potassium", "Chloride", "Calcium"
+      ],
+    },
+    {
+      id: "lipid",
+      name: t.labs.panels.lipid.name,
+      shortName: t.labs.panels.lipid.shortName,
+      icon: Heart,
+      goal: t.labs.panels.lipid.goal,
+      description: t.labs.panels.lipid.description,
+      matchPatterns: [
+        "холестерин", "ЛПНП", "ЛПВП", "Триглицериды", "Липопротеин",
+        "Cholesterol", "LDL", "HDL", "Triglyceride", "Lipoprotein"
+      ],
+    },
+    {
+      id: "diabetes",
+      name: t.labs.panels.diabetes.name,
+      shortName: t.labs.panels.diabetes.shortName,
+      icon: Activity,
+      goal: t.labs.panels.diabetes.goal,
+      description: t.labs.panels.diabetes.description,
+      matchPatterns: ["Гликированный", "HbA1c", "Глюкоза", "Glycated", "A1c", "Glucose"],
+    },
+    {
+      id: "urinalysis",
+      name: t.labs.panels.urinalysis.name,
+      shortName: t.labs.panels.urinalysis.shortName,
+      icon: Dna,
+      goal: t.labs.panels.urinalysis.goal,
+      description: t.labs.panels.urinalysis.description,
+      matchPatterns: [
+        "мочи", "Относительная плотность", "Белок в моче",
+        "Urine", "Specific Gravity", "Urinalysis"
+      ],
+    },
+    {
+      id: "other",
+      name: t.labs.panels.other.name,
+      shortName: t.labs.panels.other.shortName,
+      icon: ShieldAlert,
+      goal: t.labs.panels.other.goal,
+      description: t.labs.panels.other.description,
+      matchPatterns: [
+        "Ферритин", "Витамин", "СРБ", "Мочевая кислота", "ТТГ", "Т4",
+        "Ferritin", "Vitamin", "CRP", "Uric", "TSH", "FT4"
+      ],
+    },
+  ], [t]);
 
   const loadMetrics = async (keepSelection = true) => {
     try {
@@ -166,17 +182,18 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       setReparseMessage(null);
       const res = await api.reparseLabs(patient.id);
       await loadMetrics(false);
-      setReparseMessage(`Успешно обработано: ${res.total_metrics} показателей из бланков анализов`);
+      const msg = t.labs.rescanSuccess.replace("{count}", String(res.total_metrics));
+      setReparseMessage(msg);
       setTimeout(() => setReparseMessage(null), 5000);
     } catch (err: any) {
-      alert("Ошибка при пересканировании документов: " + (err.message || err));
+      alert((language === "ru" ? "Ошибка при пересканировании: " : "Error rescanning documents: ") + (err.message || err));
     } finally {
       setReparsing(false);
     }
   };
 
   // Group metrics by panel
-  const activePanel = PANELS.find((p) => p.id === activePanelId) || PANELS[0];
+  const activePanel = panels.find((p) => p.id === activePanelId) || panels[0];
 
   const panelMetrics = useMemo(() => {
     if (activePanel.id === "all") {
@@ -248,18 +265,18 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       setShowAddModal(false);
       await loadMetrics(true);
       setSelectedMetric(newMetric.metric_name);
-    } catch (err) {
-      alert("Ошибка добавления показателя: " + err);
+    } catch (err: any) {
+      alert((language === "ru" ? "Ошибка добавления: " : "Error adding metric: ") + (err.message || err));
     }
   };
 
   const handleDeleteMetric = async (id: number) => {
-    if (!confirm("Удалить эту запись?")) return;
+    if (!confirm(language === "ru" ? "Удалить эту запись?" : "Delete this entry?")) return;
     try {
       await api.deleteLabMetric(patient.id, id);
       setMetrics((prev) => prev.filter((m) => m.id !== id));
-    } catch (err) {
-      alert("Ошибка удаления: " + err);
+    } catch (err: any) {
+      alert((language === "ru" ? "Ошибка удаления: " : "Delete error: ") + (err.message || err));
     }
   };
 
@@ -274,14 +291,14 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                Динамика лабораторных показателей
+                {t.labs.title}
               </h3>
               <span className="px-2 py-0.5 text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md border border-zinc-200 dark:border-zinc-700">
-                {metrics.length} измерений в базе
+                {metrics.length} {t.labs.metricsInDb}
               </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Автоматический анализ бланков по датам сдачи, отслеживание трендов и референсных интервалов
+              {t.labs.subtitle}
             </p>
           </div>
         </div>
@@ -291,10 +308,10 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
             onClick={handleReparse}
             disabled={reparsing}
             className="px-3.5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-medium flex items-center gap-1.5 transition disabled:opacity-50 border border-zinc-200 dark:border-zinc-700"
-            title="Заново просканировать все загруженные файлы анализов и извлечь показатели"
+            title={language === "ru" ? "Заново просканировать все загруженные файлы анализов" : "Rescan all uploaded lab reports to extract biomarkers"}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${reparsing ? "animate-spin text-emerald-500" : ""}`} />
-            {reparsing ? "Сканирование..." : "Пересканировать бланки"}
+            {reparsing ? t.labs.rescanning : t.labs.rescanBtn}
           </button>
 
           <button
@@ -302,7 +319,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
             className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
-            Добавить вручную
+            {t.labs.addManualBtn}
           </button>
         </div>
       </div>
@@ -316,10 +333,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
 
       {/* Panels Navigation Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-zinc-200 dark:border-zinc-800">
-        {PANELS.map((panel) => {
+        {panels.map((panel) => {
           const Icon = panel.icon;
           const isActive = activePanelId === panel.id;
-          // Count indicators in this panel
           const count = panel.id === "all"
             ? Array.from(new Set(metrics.map((m) => m.metric_name))).length
             : Array.from(
@@ -372,13 +388,13 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
           </div>
           <p className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">Цель панели:</span> {activePanel.goal}
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">{t.labs.panelGoal}</span> {activePanel.goal}
           </p>
         </div>
 
         {panelMetricNames.length > 0 && (
           <div className="flex items-center gap-2 shrink-0">
-            <label className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">График:</label>
+            <label className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">{t.labs.chartSelect}</label>
             <select
               value={selectedMetric}
               onChange={(e) => setSelectedMetric(e.target.value)}
@@ -398,8 +414,8 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       {panelSummaryList.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 px-1">
-            <span className="font-medium">Биомаркеры в панели (нажмите для отображения графика)</span>
-            <span>Найдено: {panelSummaryList.length}</span>
+            <span className="font-medium">{t.labs.biomarkersInPanel}</span>
+            <span>{t.labs.found} {panelSummaryList.length}</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
             {panelSummaryList.map(({ latest, history }) => {
@@ -407,6 +423,14 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
               const isHigh = latest.status === "high";
               const isLow = latest.status === "low";
               const isBorderline = latest.status === "borderline";
+
+              const statusBadgeText = isHigh 
+                ? (language === "ru" ? "Выше" : "High") 
+                : isLow 
+                ? (language === "ru" ? "Ниже" : "Low") 
+                : isBorderline 
+                ? (language === "ru" ? "Граница" : "Border") 
+                : (language === "ru" ? "Норма" : "Normal");
 
               return (
                 <button
@@ -433,7 +457,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                           : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
                       }`}
                     >
-                      {isHigh ? "Выше" : isLow ? "Ниже" : isBorderline ? "Граница" : "Норма"}
+                      {statusBadgeText}
                     </span>
                   </div>
 
@@ -444,7 +468,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     </span>
                     {history.length > 1 && (
                       <span className="text-[10px] text-zinc-400 font-medium">
-                        {history.length} изм.
+                        {history.length} {t.labs.measurementsCount}
                       </span>
                     )}
                   </div>
@@ -468,9 +492,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       {chartData.length === 0 ? (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-12 text-center shadow-sm">
           <LineChartIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Нет данных по этой панели</p>
+          <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">{t.labs.noDataTitle}</p>
           <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto">
-            Нажмите кнопку «Пересканировать бланки» выше, чтобы извлечь показатели из загруженных PDF и анализов, или внесите данные вручную.
+            {t.labs.noDataDesc}
           </p>
         </div>
       ) : (
@@ -486,7 +510,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                 </span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Референсный диапазон нормы:{" "}
+                {t.labs.referenceRange}{" "}
                 <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                   {currentRefMin !== null && currentRefMin !== undefined ? currentRefMin : "—"} —{" "}
                   {currentRefMax !== null && currentRefMax !== undefined ? currentRefMax : "—"} {currentUnit}
@@ -498,7 +522,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
             <div className="flex items-center gap-4 text-right">
               {trendDelta !== null && (
                 <div className="flex flex-col items-end">
-                  <span className="text-[11px] text-zinc-400">Тренд</span>
+                  <span className="text-[11px] text-zinc-400">{t.labs.trend}</span>
                   <div
                     className={`flex items-center gap-1 text-xs font-semibold ${
                       trendDelta > 0
@@ -524,7 +548,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
 
               <div>
                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">
-                  Текущее ({chartData[chartData.length - 1].record_date})
+                  {t.labs.current} ({chartData[chartData.length - 1].record_date})
                 </span>
                 <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {latestMetricValue}{" "}
@@ -561,7 +585,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     fontSize: "12px",
                   }}
                   formatter={(val: any) => [`${val} ${currentUnit}`, selectedMetric]}
-                  labelFormatter={(lbl) => `Дата: ${lbl}`}
+                  labelFormatter={(lbl) => `${t.common.date}: ${lbl}`}
                 />
                 {currentRefMin !== null && currentRefMin !== undefined && (
                   <ReferenceLine
@@ -569,7 +593,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     stroke={isDark ? "#60a5fa" : "#3b82f6"}
                     strokeDasharray="4 4"
                     label={{ 
-                      value: `Нижняя норма (${currentRefMin})`, 
+                      value: `${t.labs.lowerRef} (${currentRefMin})`, 
                       fill: isDark ? "#60a5fa" : "#3b82f6", 
                       fontSize: 10, 
                       position: "insideBottomLeft" 
@@ -582,7 +606,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     stroke={isDark ? "#f87171" : "#ef4444"}
                     strokeDasharray="4 4"
                     label={{ 
-                      value: `Верхняя норма (${currentRefMax})`, 
+                      value: `${t.labs.upperRef} (${currentRefMax})`, 
                       fill: isDark ? "#f87171" : "#ef4444", 
                       fontSize: 10, 
                       position: "insideTopLeft" 
@@ -608,9 +632,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-              Хронология измерений ({selectedMetric})
+              {t.labs.historyTitle} ({selectedMetric})
             </h4>
-            <span className="text-xs text-zinc-400">Всего точек: {chartData.length}</span>
+            <span className="text-xs text-zinc-400">{t.labs.totalPoints} {chartData.length}</span>
           </div>
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {chartData.map((row) => (
@@ -643,17 +667,17 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     }`}
                   >
                     {row.status === "normal"
-                      ? "Норма"
+                      ? t.common.normal
                       : row.status === "high"
-                      ? "Повышен"
+                      ? (language === "ru" ? "Повышен" : "High")
                       : row.status === "low"
-                      ? "Понижен"
-                      : "Граница"}
+                      ? (language === "ru" ? "Понижен" : "Low")
+                      : t.common.borderline}
                   </span>
                   <button
                     onClick={() => handleDeleteMetric(row.id)}
                     className="text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-red-400 transition"
-                    title="Удалить точку"
+                    title={t.common.delete}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -669,7 +693,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
         <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
-              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Добавить показатель анализа</h3>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">{t.labs.addModalTitle}</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white"
@@ -680,12 +704,12 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
 
             <form onSubmit={handleAddMetric} className="space-y-3">
               <div>
-                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Название биомаркера</label>
+                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.labs.metricNameLabel}</label>
                 <input
                   type="text"
                   value={newMetric.metric_name || ""}
                   onChange={(e) => setNewMetric({ ...newMetric, metric_name: e.target.value })}
-                  placeholder="напр. Холестерин ЛПНП (LDL), Гемоглобин..."
+                  placeholder={t.labs.metricNamePlaceholder}
                   className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   required
                 />
@@ -693,7 +717,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Значение</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.labs.valueLabel}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -704,12 +728,12 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Ед. измерения</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.labs.unitLabel}</label>
                   <input
                     type="text"
                     value={newMetric.unit || ""}
                     onChange={(e) => setNewMetric({ ...newMetric, unit: e.target.value })}
-                    placeholder="ммоль/л, г/л..."
+                    placeholder={language === "ru" ? "ммоль/л, г/л..." : "mmol/L, g/L..."}
                     className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   />
                 </div>
@@ -717,7 +741,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Референс Мин</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.labs.refMinLabel}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -727,7 +751,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Референс Макс</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.labs.refMaxLabel}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -739,7 +763,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
               </div>
 
               <div>
-                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Дата взятия анализа</label>
+                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.labs.recordDateLabel}</label>
                 <input
                   type="date"
                   value={newMetric.record_date || ""}
@@ -755,13 +779,13 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs transition"
                 >
-                  Отмена
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold shadow-sm transition"
                 >
-                  Добавить
+                  {language === "ru" ? "Добавить" : "Add"}
                 </button>
               </div>
             </form>

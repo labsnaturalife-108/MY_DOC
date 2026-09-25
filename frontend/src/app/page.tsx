@@ -10,8 +10,10 @@ import { PreventCalculatorView } from "@/components/PreventCalculatorView";
 import { SettingsModal } from "@/components/SettingsModal";
 import { Patient, ChatSession, api } from "@/lib/api";
 import { UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Home() {
+  const { language, t } = useLanguage();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -106,8 +108,9 @@ export default function Home() {
   const handleCreateNewChat = async () => {
     if (!activePatient) return;
     try {
+      const prefix = language === "ru" ? "Консультация " : "Consultation ";
       const newSession = await api.createChatSession(activePatient.id, {
-        title: "Консультация " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        title: prefix + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         model_id: isLocalOnline ? "lmstudio-auto" : "demo-doctor",
         provider: isLocalOnline ? "lmstudio" : "demo"
       });
@@ -208,17 +211,16 @@ export default function Home() {
             <div className="w-20 h-20 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-4 shadow-xl">
               <Sparkles className="w-10 h-10" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Добро пожаловать в MY_DOC</h2>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{t.welcome.title}</h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mb-6">
-              Интеллектуальный медицинский ассистент и электронный кабинет здоровья. Для начала
-              работы создайте профиль пациента.
+              {t.welcome.subtitle}
             </p>
             <button
               onClick={() => setIsNewPatientModalOpen(true)}
               className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold rounded-2xl flex items-center gap-2 shadow-lg transition"
             >
               <UserPlus className="w-5 h-5" />
-              Создать карточку пациента
+              {t.welcome.createPatientBtn}
             </button>
           </div>
         ) : (
@@ -291,7 +293,7 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
-                Новая карточка пациента
+                {t.modals.newPatientTitle}
               </h3>
               <button
                 onClick={() => setIsNewPatientModalOpen(false)}
@@ -303,10 +305,10 @@ export default function Home() {
 
             <form onSubmit={handleCreatePatientSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">ФИО пациента</label>
+                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.modals.fullNameLabel}</label>
                 <input
                   type="text"
-                  placeholder="Иванов Иван Иванович"
+                  placeholder={t.modals.fullNamePlaceholder}
                   value={newPatientData.full_name || ""}
                   onChange={(e) => setNewPatientData({ ...newPatientData, full_name: e.target.value })}
                   className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
@@ -316,7 +318,9 @@ export default function Home() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Возраст (лет)</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">
+                    {language === "ru" ? "Возраст (лет)" : "Age (years)"}
+                  </label>
                   <input
                     type="number"
                     placeholder="35"
@@ -326,21 +330,23 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Пол</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">{t.modals.genderLabel}</label>
                   <select
                     value={newPatientData.gender || "male"}
                     onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
                     className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                   >
-                    <option value="male">Мужской</option>
-                    <option value="female">Женский</option>
+                    <option value="male">{t.common.male}</option>
+                    <option value="female">{t.common.female}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Рост (см)</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">
+                    {t.patientCard.height} ({t.common.cm})
+                  </label>
                   <input
                     type="number"
                     placeholder="178"
@@ -350,7 +356,9 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Вес (кг)</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">
+                    {t.patientCard.weight} ({t.common.kg})
+                  </label>
                   <input
                     type="number"
                     step="0.1"
@@ -364,11 +372,11 @@ export default function Home() {
 
               <div>
                 <label className="text-xs text-zinc-700 dark:text-zinc-300 mb-1 block font-medium">
-                  Аллергии и непереносимости
+                  {t.patientCard.allergies}
                 </label>
                 <input
                   type="text"
-                  placeholder="напр. Пенициллин, цитрусовые, пыльца..."
+                  placeholder={language === "ru" ? "напр. Пенициллин, цитрусовые, пыльца..." : "e.g. Penicillin, pollen, peanuts..."}
                   value={newPatientData.allergies || ""}
                   onChange={(e) => setNewPatientData({ ...newPatientData, allergies: e.target.value })}
                   className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
@@ -381,13 +389,13 @@ export default function Home() {
                   onClick={() => setIsNewPatientModalOpen(false)}
                   className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs transition"
                 >
-                  Отмена
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold shadow transition"
                 >
-                  Создать кабинет
+                  {t.modals.createButton}
                 </button>
               </div>
             </form>
@@ -405,25 +413,38 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Удаление профиля пациента
+                  {t.modals.deletePatientTitle}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Это действие необратимо
+                  {language === "ru" ? "Это действие необратимо" : "This action cannot be undone"}
                 </p>
               </div>
             </div>
 
             <div className="p-3.5 bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl space-y-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
               <p>
-                Вы действительно хотите удалить пациента <strong className="text-zinc-900 dark:text-white font-semibold">{patientToDelete.full_name}</strong>?
+                {t.modals.deletePatientWarning} <strong className="text-zinc-900 dark:text-white font-semibold">{patientToDelete.full_name}</strong>?
               </p>
               <div className="pt-1 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1">
-                <p className="font-semibold text-rose-700 dark:text-rose-400">Будут безвозвратно удалены:</p>
+                <p className="font-semibold text-rose-700 dark:text-rose-400">
+                  {language === "ru" ? "Будут безвозвратно удалены:" : "Will be permanently deleted:"}
+                </p>
                 <ul className="list-disc list-inside space-y-0.5">
-                  <li>Все загруженные документы и бланки анализов</li>
-                  <li>Извлеченные биомаркеры и динамика показателей</li>
-                  <li>Векторные эмбеддинги базы знаний ChromaDB</li>
-                  <li>Все сессии диалогов и консультаций с ИИ</li>
+                  {language === "ru" ? (
+                    <>
+                      <li>Все загруженные документы и бланки анализов</li>
+                      <li>Извлеченные биомаркеры и динамика показателей</li>
+                      <li>Векторные эмбеддинги базы знаний ChromaDB</li>
+                      <li>Все сессии диалогов и консультаций с ИИ</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>All uploaded documents and lab reports</li>
+                      <li>Extracted biomarkers and dynamic metrics</li>
+                      <li>ChromaDB vector embeddings</li>
+                      <li>All AI consultation sessions and history</li>
+                    </>
+                  )}
                 </ul>
               </div>
             </div>
@@ -435,7 +456,7 @@ export default function Home() {
                 onClick={() => setPatientToDelete(null)}
                 className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-medium transition disabled:opacity-50"
               >
-                Отмена
+                {t.common.cancel}
               </button>
               <button
                 type="button"
@@ -446,12 +467,12 @@ export default function Home() {
                 {isDeletingPatient ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Удаление...</span>
+                    <span>{t.common.loading}</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Удалить пациента</span>
+                    <span>{t.modals.deletePatientConfirmBtn}</span>
                   </>
                 )}
               </button>

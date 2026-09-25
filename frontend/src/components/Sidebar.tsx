@@ -15,10 +15,12 @@ import {
   Stethoscope,
   HeartPulse,
   Sun,
-  Moon
+  Moon,
+  Languages
 } from "lucide-react";
 import { Patient, ChatSession } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SidebarProps {
   patients: Patient[];
@@ -54,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeletePatient
 }) => {
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
 
   return (
     <aside className="w-80 flex flex-col bg-white dark:bg-zinc-900/95 border-r border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 select-none transition-colors duration-150">
@@ -70,15 +73,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 AI MED
               </span>
             </h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Личный доктор-помощник</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t.sidebar.brandTagline}</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-1">
+          {/* Language Switcher */}
+          <button
+            onClick={toggleLanguage}
+            title={t.sidebar.languageToggle}
+            className="flex items-center gap-1 px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg text-xs font-bold transition border border-zinc-200 dark:border-zinc-700/70"
+          >
+            <Languages className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="uppercase text-[11px] tracking-wider">{language}</span>
+          </button>
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
-            title={resolvedTheme === "dark" ? "Включить светлую тему" : "Включить темную тему"}
+            title={resolvedTheme === "dark" ? t.sidebar.themeLight : t.sidebar.themeDark}
             className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition"
           >
             {resolvedTheme === "dark" ? (
@@ -90,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={onOpenSettings}
-            title="Настройки API и моделей"
+            title={t.sidebar.settings}
             className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg transition"
           >
             <Settings className="w-4 h-4" />
@@ -102,14 +115,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-b border-zinc-200 dark:border-zinc-800/80">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Пациент / Кабинет
+            {t.sidebar.patientCabinet}
           </span>
           <button
             onClick={onOpenNewPatientModal}
             className="text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 font-medium transition"
           >
             <UserPlus className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-300" />
-            Новый
+            {t.sidebar.newPatient}
           </button>
         </div>
 
@@ -119,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full py-2.5 px-3 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-xl text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 flex items-center justify-center gap-2 transition"
           >
             <UserPlus className="w-4 h-4 text-zinc-400" />
-            Создать карточку пациента
+            {t.sidebar.noPatients}
           </button>
         ) : (
           <div className="flex items-center gap-1.5">
@@ -134,14 +147,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               {patients.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.full_name} {p.age ? `(${p.age} лет)` : ""}
+                  {p.full_name} {p.age ? `(${p.age} ${t.common.yearsOld})` : ""}
                 </option>
               ))}
             </select>
             {onDeletePatient && activePatient && (
               <button
                 onClick={() => onDeletePatient(activePatient)}
-                title={`Удалить пациента ${activePatient.full_name}`}
+                title={`${t.sidebar.deletePatient} ${activePatient.full_name}`}
                 className="p-2 rounded-xl bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-950/40 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 border border-zinc-200 dark:border-zinc-700/80 transition shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
@@ -163,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <Bot className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            ИИ-Консультант
+            {t.sidebar.tabs.chat}
           </button>
 
           <button
@@ -175,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            Медкарта
+            {t.sidebar.tabs.profile}
           </button>
 
           <button
@@ -187,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <FolderOpen className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            Файлы и База
+            {t.sidebar.tabs.folders}
           </button>
 
           <button
@@ -199,7 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <LineChart className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            Динамика
+            {t.sidebar.tabs.labs}
           </button>
 
           <button
@@ -212,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center gap-2">
               <HeartPulse className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
-              <span>Риск PREVENT™</span>
+              <span>{t.sidebar.tabs.prevent}</span>
             </div>
             <span className="text-[10px] font-mono uppercase bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800/50">
               AHA 10-лет
@@ -225,13 +238,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Диалоги с ИИ
+            {t.sidebar.consultations}
           </span>
           {activePatient && (
             <button
               onClick={onNewChat}
               className="p-1 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition"
-              title="Создать новый диалог"
+              title={t.sidebar.newChat}
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -240,17 +253,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {!activePatient ? (
           <p className="text-xs text-zinc-400 dark:text-zinc-500 italic p-2 text-center">
-            Выберите или создайте пациента
+            {t.sidebar.noPatients}
           </p>
         ) : chatSessions.length === 0 ? (
           <div className="text-center py-6 px-2">
             <MessageSquare className="w-8 h-8 text-zinc-400 dark:text-zinc-700 mx-auto mb-2" />
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Нет активных диалогов</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {language === "ru" ? "Нет активных диалогов" : "No active consultations"}
+            </p>
             <button
               onClick={onNewChat}
               className="mt-3 text-xs bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 border border-zinc-300 dark:border-zinc-700 transition"
             >
-              <Plus className="w-3.5 h-3.5" /> Начать консультацию
+              <Plus className="w-3.5 h-3.5" /> {t.sidebar.newChat}
             </button>
           </div>
         ) : (
@@ -277,7 +292,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onDeleteSession(session.id);
                 }}
                 className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 dark:hover:text-red-400 text-zinc-400 dark:text-zinc-500 transition"
-                title="Удалить диалог"
+                title={t.sidebar.deleteChat}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -297,7 +312,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>LM Studio / Local:</span>
         </div>
         <span className={isLocalOnline ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-zinc-500 dark:text-zinc-400"}>
-          {isLocalOnline ? "Онлайн" : "Офлайн / Демо"}
+          {isLocalOnline ? t.settings.online : t.settings.offline}
         </span>
       </div>
     </aside>

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Check, Server, Key, Cpu, RefreshCw, Sun, Moon, Monitor } from "lucide-react";
+import { X, Check, Server, Key, Cpu, RefreshCw, Sun, Moon, Monitor, Languages } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onRefreshStatus }) => {
   const { theme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const [lmstudioUrl, setLmstudioUrl] = useState("http://localhost:1234/v1");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434/v1");
   
@@ -60,13 +62,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     try {
       const res = await api.checkLocalServers();
       if (res.lmstudio?.online) {
-        setTestResult(`✅ LM Studio обнаружен и работает! Найдено моделей: ${res.lmstudio.models?.length || 0}`);
+        setTestResult(
+          language === "ru"
+            ? `✅ LM Studio обнаружен и работает! Найдено моделей: ${res.lmstudio.models?.length || 0}`
+            : `✅ LM Studio detected and running! Models available: ${res.lmstudio.models?.length || 0}`
+        );
       } else {
-        setTestResult(`⚠️ LM Studio не отвечает по адресу ${lmstudioUrl}. Убедитесь, что сервер включен в LM Studio.`);
+        setTestResult(
+          language === "ru"
+            ? `⚠️ LM Studio не отвечает по адресу ${lmstudioUrl}. Убедитесь, что сервер включен в LM Studio.`
+            : `⚠️ LM Studio is not responding at ${lmstudioUrl}. Ensure server is running in LM Studio.`
+        );
       }
       if (onRefreshStatus) onRefreshStatus();
     } catch (err: any) {
-      setTestResult("❌ Ошибка проверки: " + err.message);
+      setTestResult((language === "ru" ? "❌ Ошибка проверки: " : "❌ Check failed: ") + err.message);
     } finally {
       setTesting(false);
     }
@@ -92,7 +102,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
       if (onRefreshStatus) onRefreshStatus();
     } catch (err: any) {
-      alert("Ошибка сохранения: " + err.message);
+      alert((language === "ru" ? "Ошибка сохранения: " : "Save error: ") + err.message);
     }
   };
 
@@ -107,8 +117,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               <Server className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Настройки системы</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Тема оформления, локальные серверы и API</p>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                {language === "ru" ? "Настройки системы" : "System Settings"}
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {language === "ru" ? "Язык, тема оформления, локальные серверы и API" : "Language, theme, local servers & API keys"}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg transition">
@@ -117,11 +131,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
         </div>
 
         <form onSubmit={handleSaveAll} className="space-y-5">
-          {/* Section 0: Theme Switcher */}
+          {/* Section: Language Switcher */}
+          <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 mb-1 block">
+              <Languages className="w-4 h-4 text-emerald-500" />
+              {language === "ru" ? "Язык интерфейса / Interface Language" : "Interface Language / Язык интерфейса"}
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setLanguage("ru")}
+                className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  language === "ru"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 shadow-sm font-bold"
+                    : "bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <span>🇷🇺 Русский (RU)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  language === "en"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 shadow-sm font-bold"
+                    : "bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <span>🇬🇧 English (EN)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section: Theme Switcher */}
           <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
             <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 mb-1 block">
               <Sun className="w-4 h-4 text-amber-500" />
-              Тема интерфейса
+              {language === "ru" ? "Тема интерфейса" : "Color Theme"}
             </span>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -134,7 +180,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 }`}
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
-                Светлая
+                {language === "ru" ? "Светлая" : "Light"}
               </button>
               <button
                 type="button"
@@ -146,7 +192,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 }`}
               >
                 <Moon className="w-3.5 h-3.5 text-sky-400" />
-                Темная
+                {language === "ru" ? "Темная" : "Dark"}
               </button>
               <button
                 type="button"
@@ -158,17 +204,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 }`}
               >
                 <Monitor className="w-3.5 h-3.5 text-zinc-400" />
-                Системная
+                {language === "ru" ? "Системная" : "System"}
               </button>
             </div>
           </div>
 
-          {/* Section 1: Local LM Studio */}
+          {/* Section: Local LM Studio */}
           <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5">
                 <Cpu className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-                Локальный LM Studio (Конфиденциально)
+                {language === "ru" ? "Локальный LM Studio (Конфиденциально)" : "Local LM Studio (Private & Offline)"}
               </span>
               <button
                 type="button"
@@ -177,7 +223,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 className="text-[11px] text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1 bg-zinc-200/80 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 px-2.5 py-1 rounded-lg border border-zinc-300 dark:border-zinc-700 transition"
               >
                 <RefreshCw className={`w-3 h-3 ${testing ? 'animate-spin' : ''}`} />
-                Проверить связь
+                {language === "ru" ? "Проверить связь" : "Test Connection"}
               </button>
             </div>
 
@@ -199,11 +245,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             )}
           </div>
 
-          {/* Section 2: Cloud API Keys */}
+          {/* Section: Cloud API Keys */}
           <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
             <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 mb-1 block">
               <Key className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-              Облачные API Ключи (Шифруются и сохраняются локально)
+              {language === "ru" ? "Облачные API Ключи (Шифруются и сохраняются локально)" : "Cloud API Keys (Encrypted & stored locally)"}
             </span>
 
             <div className="space-y-2.5">
@@ -270,14 +316,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               onClick={onClose}
               className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs transition"
             >
-              Закрыть
+              {t.common.close}
             </button>
             <button
               type="submit"
               className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition"
             >
               {savedSuccess ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : null}
-              {savedSuccess ? "Сохранено!" : "Сохранить настройки"}
+              {savedSuccess ? (language === "ru" ? "Сохранено!" : "Saved!") : t.settings.saveBtn}
             </button>
           </div>
         </form>
