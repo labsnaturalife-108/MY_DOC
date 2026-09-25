@@ -11,7 +11,11 @@ STATIC_CLOUD_MODELS = [
     {"id": "gpt-4o-mini", "name": "OpenAI: GPT-4o Mini", "provider": "openai", "is_local": False},
     {"id": "claude-3-5-sonnet", "name": "Anthropic: Claude 3.5 Sonnet", "provider": "anthropic", "is_local": False},
     {"id": "gemini-3.8-flash", "name": "Google: Gemini 3.8 Flash (Рекомендуется)", "provider": "gemini", "is_local": False},
+    {"id": "gemini-3.5-flash-lite", "name": "Google: Gemini 3.5 Flash Lite", "provider": "gemini", "is_local": False},
+    {"id": "gemini-3.1-flash-lite", "name": "Google: Gemini 3.1 Flash Lite", "provider": "gemini", "is_local": False},
+    {"id": "gemini-2.5-flash-lite", "name": "Google: Gemini 2.5 Flash Lite", "provider": "gemini", "is_local": False},
     {"id": "gemini-flash-latest", "name": "Google: Gemini Flash Latest", "provider": "gemini", "is_local": False},
+    {"id": "antigravity", "name": "Google: Antigravity Agent (Preview)", "provider": "antigravity", "is_local": False},
     {"id": "deepseek-chat", "name": "DeepSeek: V3", "provider": "deepseek", "is_local": False},
     {"id": "deepseek-reasoner", "name": "DeepSeek: R1 (Reasoning)", "provider": "deepseek", "is_local": False},
     {"id": "grok-2", "name": "xAI: Grok 2", "provider": "grok", "is_local": False},
@@ -193,6 +197,73 @@ class LLMHub:
                 yield f"⚠️ Не удалось подключиться к LM Studio по адресу {base_url}.\nУбедитесь, что сервер включен в LM Studio.\n\nТехническая ошибка: {str(e)}"
                 return
 
+        # Handle Google Antigravity Agent via Interactions API
+        if provider == "antigravity" or model_id in ["antigravity", "antigravity-preview-latest", "antigravity-preview-09-2026"]:
+            api_key = api_keys.get("antigravity") or api_keys.get("gemini")
+            if not api_key:
+                yield "⚠️ Для использования модели Antigravity требуется Google Gemini API-ключ.\nПожалуйста, укажите его в настройках (кнопка '⚙️ Настройки' вверху)."
+                return
+
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/interactions"
+            headers = {
+                "x-goog-api-key": api_key,
+                "Content-Type": "application/json"
+            }
+
+            prompt_parts = []
+            if system_content:
+                prompt_parts.append(system_content)
+            for m in messages:
+                m_role = "Пациент / Пользователь" if m.get("role") == "user" else "ИИ-Ассистент"
+                prompt_parts.append(f"{m_role}: {m.get('content', '')}")
+
+            payload = {
+                "agent": "antigravity-preview-09-2026",
+                "input": "\n\n".join(prompt_parts),
+                "environment": "remote",
+                "stream": True
+            }
+
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    async with httpx.AsyncClient(timeout=90.0) as client:
+                        async with client.stream("POST", endpoint, headers=headers, json=payload) as response:
+                            if response.status_code in [503, 429] and attempt < max_retries - 1:
+                                await asyncio.sleep(1.5 * (attempt + 1))
+                                continue
+
+                            if response.status_code != 200:
+                                err_body = (await response.aread()).decode('utf-8', errors='ignore')
+                                if response.status_code == 503:
+                                    yield "⚠️ Сервер Antigravity временно перегружен (503 High Demand). Попробуйте повторить запрос еще раз через несколько секунд."
+                                elif response.status_code == 429:
+                                    yield "⚠️ Превышен лимит запросов Antigravity (429 Rate Limit). Пожалуйста, подождите немного перед следующим вопросом."
+                                else:
+                                    yield f"⚠️ Ошибка API Antigravity ({response.status_code}): {err_body}"
+                                return
+
+                            async for line in response.aiter_lines():
+                                if line.startswith("data: "):
+                                    data_str = line[6:].strip()
+                                    if data_str == "[DONE]":
+                                        break
+                                    try:
+                                        chunk = json.loads(data_str)
+                                        delta = chunk.get("delta", {})
+                                        text = delta.get("text", "")
+                                        if text:
+                                            yield text
+                                    except Exception:
+                                        continue
+                    return
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(1.5 * (attempt + 1))
+                        continue
+                    yield f"⚠️ Ошибка связи с API Antigravity: {str(e)}"
+                    return
+
         # Handle OpenAI / DeepSeek / Grok / Gemini / Qwen (OpenAI standard format)
         openai_providers = {
             "openai": ("https://api.openai.com/v1/chat/completions", api_keys.get("openai")),
@@ -213,6 +284,8 @@ class LLMHub:
             if provider == "gemini":
                 if active_model in ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.5-flash"]:
                     active_model = "gemini-3.8-flash"
+                elif active_model in ["gemini-2.5-flash-lite"]:
+                    active_model = "gemini-3.5-flash-lite"
 
             headers = {
                 "Authorization": f"Bearer {api_key}",

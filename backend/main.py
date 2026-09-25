@@ -437,6 +437,7 @@ async def stream_chat_message(
         "openai": settings.get("api_key_openai") or os.getenv("OPENAI_API_KEY", ""),
         "anthropic": settings.get("api_key_anthropic") or os.getenv("ANTHROPIC_API_KEY", ""),
         "gemini": settings.get("api_key_gemini") or os.getenv("GEMINI_API_KEY", ""),
+        "antigravity": settings.get("api_key_gemini") or os.getenv("GEMINI_API_KEY", ""),
         "deepseek": settings.get("api_key_deepseek") or os.getenv("DEEPSEEK_API_KEY", ""),
         "grok": settings.get("api_key_grok") or os.getenv("GROK_API_KEY", ""),
         "qwen": settings.get("api_key_qwen") or os.getenv("QWEN_API_KEY", ""),
