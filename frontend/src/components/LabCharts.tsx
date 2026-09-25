@@ -1,15 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   LineChart as LineChartIcon, 
   Plus, 
   Trash2, 
   TrendingUp, 
+  TrendingDown,
+  Minus,
   Calendar, 
   CheckCircle2, 
   AlertCircle,
-  X
+  X,
+  RefreshCw,
+  Activity,
+  Heart,
+  Droplet,
+  FlaskConical,
+  Dna,
+  ShieldAlert,
+  Info
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -28,31 +38,116 @@ interface LabChartsProps {
   patient: Patient;
 }
 
+interface PanelConfig {
+  id: string;
+  name: string;
+  shortName: string;
+  icon: React.ComponentType<{ className?: string }>;
+  goal: string;
+  description: string;
+  matchPatterns: string[];
+}
+
+const PANELS: PanelConfig[] = [
+  {
+    id: "all",
+    name: "Все показатели",
+    shortName: "Все",
+    icon: Activity,
+    goal: "Сводный мониторинг всех обнаруженных в анализах биомаркеров пациента.",
+    description: "Полная картина лабораторных исследований по датам сдачи.",
+    matchPatterns: [],
+  },
+  {
+    id: "cbc",
+    name: "Complete Blood Count (CBC) — Общий анализ крови",
+    shortName: "CBC (ОАК)",
+    icon: Droplet,
+    goal: "Скрининг на анемию, скрытые воспалительные процессы, инфекции и заболевания системы крови.",
+    description: "Эритроциты (RBC), лейкоциты (WBC), тромбоциты (PLT), гемоглобин (Hb), гематокрит (HCT), СОЭ.",
+    matchPatterns: ["Гемоглобин", "Эритроциты", "Лейкоциты (WBC)", "Тромбоциты", "Гематокрит", "СОЭ"],
+  },
+  {
+    id: "cmp",
+    name: "Comprehensive Metabolic Panel (CMP) — Метаболическая панель",
+    shortName: "CMP (14 показателей)",
+    icon: FlaskConical,
+    goal: "Комплексная оценка функции почек, печени, белкового обмена, баланса электролитов и глюкозы.",
+    description: "Глюкоза, Креатинин, Мочевина (BUN), eGFR (СКФ), АЛТ, АСТ, ЩФ (ALP), Билирубин, Общий белок, Альбумин, Натрий, Калий, Хлориды, Кальций.",
+    matchPatterns: [
+      "Глюкоза", "Креатинин", "Мочевина", "eGFR", "АЛТ", "АСТ", 
+      "Щелочная фосфатаза", "билирубин", "Общий белок", "Альбумин", 
+      "Натрий", "Калий", "Хлориды", "Кальций"
+    ],
+  },
+  {
+    id: "lipid",
+    name: "Lipid Panel — Липидограмма (Риски ССЗ)",
+    shortName: "Липидограмма",
+    icon: Heart,
+    goal: "Оценка липидного профиля, рисков атеросклероза, ишемической болезни сердца и сосудистых осложнений.",
+    description: "Общий холестерин, ЛПНП (LDL), ЛПВП (HDL), Триглицериды, Липопротеин (a).",
+    matchPatterns: ["холестерин", "ЛПНП", "ЛПВП", "Триглицериды", "Липопротеин"],
+  },
+  {
+    id: "diabetes",
+    name: "Диабет и углеводный обмен (HbA1c & Глюкоза)",
+    shortName: "HbA1c / Сахар",
+    icon: Activity,
+    goal: "Оценка среднего уровня глюкозы за последние 3 месяца, ранняя диагностика предиабета и сахарного диабета.",
+    description: "Гликированный гемоглобин (HbA1c), Глюкоза натощак.",
+    matchPatterns: ["Гликированный", "HbA1c", "Глюкоза"],
+  },
+  {
+    id: "urinalysis",
+    name: "Urinalysis (UA) — Общий анализ мочи",
+    shortName: "Анализ мочи (UA)",
+    icon: Dna,
+    goal: "Скрининг патологии почек, мочевыводящих путей, метаболических нарушений и скрытого воспаления.",
+    description: "Относительная плотность, pH мочи, лейкоциты, эритроциты, белок в моче.",
+    matchPatterns: ["мочи", "Относительная плотность", "Белок в моче"],
+  },
+  {
+    id: "other",
+    name: "Другие ключевые биомаркеры",
+    shortName: "Другие маркеры",
+    icon: ShieldAlert,
+    goal: "Мониторинг депо железа, витаминного статуса, маркеров воспаления и функции щитовидной железы.",
+    description: "Ферритин, Витамин D (25-OH), С-реактивный белок (СРБ), Мочевая кислота, ТТГ, Т4 свободный.",
+    matchPatterns: ["Ферритин", "Витамин", "СРБ", "Мочевая кислота", "ТТГ", "Т4"],
+  },
+];
+
 export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
   const [metrics, setMetrics] = useState<LabMetric[]>([]);
+  const [activePanelId, setActivePanelId] = useState<string>("cbc");
   const [selectedMetric, setSelectedMetric] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [reparsing, setReparsing] = useState(false);
+  const [reparseMessage, setReparseMessage] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMetric, setNewMetric] = useState<Partial<LabMetric>>({
-    metric_name: "Ферритин",
-    value: 75,
-    unit: "мкг/л",
-    reference_min: 30,
-    reference_max: 200,
+    metric_name: "Гемоглобин (Hb)",
+    value: 150,
+    unit: "г/л",
+    reference_min: 130,
+    reference_max: 175,
     record_date: new Date().toISOString().split("T")[0],
     notes: ""
   });
 
-  const loadMetrics = async () => {
+  const loadMetrics = async (keepSelection = true) => {
     try {
       setLoading(true);
       const data = await api.getLabMetrics(patient.id);
       setMetrics(data);
-      if (data.length > 0 && !selectedMetric) {
-        setSelectedMetric(data[0].metric_name);
+      if (!keepSelection || !selectedMetric) {
+        if (data.length > 0) {
+          setSelectedMetric(data[0].metric_name);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -62,18 +157,88 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
   };
 
   useEffect(() => {
-    loadMetrics();
+    loadMetrics(false);
   }, [patient.id]);
 
-  const uniqueMetricNames = Array.from(new Set(metrics.map((m) => m.metric_name)));
+  const handleReparse = async () => {
+    try {
+      setReparsing(true);
+      setReparseMessage(null);
+      const res = await api.reparseLabs(patient.id);
+      await loadMetrics(false);
+      setReparseMessage(`Успешно обработано: ${res.total_metrics} показателей из бланков анализов`);
+      setTimeout(() => setReparseMessage(null), 5000);
+    } catch (err: any) {
+      alert("Ошибка при пересканировании документов: " + (err.message || err));
+    } finally {
+      setReparsing(false);
+    }
+  };
 
-  const filteredData = metrics
-    .filter((m) => m.metric_name === selectedMetric)
-    .sort((a, b) => new Date(a.record_date).getTime() - new Date(b.record_date).getTime());
+  // Group metrics by panel
+  const activePanel = PANELS.find((p) => p.id === activePanelId) || PANELS[0];
 
-  const currentRefMin = filteredData.length > 0 ? filteredData[0].reference_min : null;
-  const currentRefMax = filteredData.length > 0 ? filteredData[0].reference_max : null;
-  const currentUnit = filteredData.length > 0 ? filteredData[0].unit : "";
+  const panelMetrics = useMemo(() => {
+    if (activePanel.id === "all") {
+      return metrics;
+    }
+    return metrics.filter((m) =>
+      activePanel.matchPatterns.some((pattern) =>
+        m.metric_name.toLowerCase().includes(pattern.toLowerCase())
+      )
+    );
+  }, [metrics, activePanel]);
+
+  // Unique metric names within the active panel
+  const panelMetricNames = useMemo(() => {
+    return Array.from(new Set(panelMetrics.map((m) => m.metric_name)));
+  }, [panelMetrics]);
+
+  // If selectedMetric is not in panelMetricNames, select first available
+  useEffect(() => {
+    if (panelMetricNames.length > 0) {
+      if (!panelMetricNames.includes(selectedMetric)) {
+        setSelectedMetric(panelMetricNames[0]);
+      }
+    }
+  }, [activePanelId, panelMetricNames, selectedMetric]);
+
+  // Summary list of metrics in current panel (latest entry of each)
+  const panelSummaryList = useMemo(() => {
+    const map = new Map<string, { latest: LabMetric; history: LabMetric[] }>();
+    panelMetrics.forEach((m) => {
+      const existing = map.get(m.metric_name);
+      if (!existing) {
+        map.set(m.metric_name, { latest: m, history: [m] });
+      } else {
+        existing.history.push(m);
+        if (new Date(m.record_date).getTime() >= new Date(existing.latest.record_date).getTime()) {
+          existing.latest = m;
+        }
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => 
+      a.latest.metric_name.localeCompare(b.latest.metric_name)
+    );
+  }, [panelMetrics]);
+
+  // Data for the active chart
+  const chartData = useMemo(() => {
+    return metrics
+      .filter((m) => m.metric_name === selectedMetric)
+      .sort((a, b) => new Date(a.record_date).getTime() - new Date(b.record_date).getTime());
+  }, [metrics, selectedMetric]);
+
+  const currentRefMin = chartData.length > 0 ? chartData[chartData.length - 1].reference_min : null;
+  const currentRefMax = chartData.length > 0 ? chartData[chartData.length - 1].reference_max : null;
+  const currentUnit = chartData.length > 0 ? chartData[chartData.length - 1].unit : "";
+  const latestMetricValue = chartData.length > 0 ? chartData[chartData.length - 1].value : null;
+  const previousMetricValue = chartData.length > 1 ? chartData[chartData.length - 2].value : null;
+
+  const trendDelta = latestMetricValue !== null && previousMetricValue !== null
+    ? +(latestMetricValue - previousMetricValue).toFixed(2)
+    : null;
 
   const handleAddMetric = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +246,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
     try {
       await api.addLabMetric(patient.id, newMetric);
       setShowAddModal(false);
-      await loadMetrics();
+      await loadMetrics(true);
       setSelectedMetric(newMetric.metric_name);
     } catch (err) {
       alert("Ошибка добавления показателя: " + err);
@@ -92,92 +257,300 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
     if (!confirm("Удалить эту запись?")) return;
     try {
       await api.deleteLabMetric(patient.id, id);
-      setMetrics(metrics.filter((m) => m.id !== id));
+      setMetrics((prev) => prev.filter((m) => m.id !== id));
     } catch (err) {
       alert("Ошибка удаления: " + err);
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Top action bar */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
-          <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300">
-            <TrendingUp className="w-5 h-5" />
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Top Banner / Actions */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200">
+            <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Динамика лабораторных показателей</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Графики изменения биомаркеров по датам сдачи</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                Динамика лабораторных показателей
+              </h3>
+              <span className="px-2 py-0.5 text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-md border border-zinc-200 dark:border-zinc-700">
+                {metrics.length} измерений в базе
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Автоматический анализ бланков по датам сдачи, отслеживание трендов и референсных интервалов
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
-          {uniqueMetricNames.length > 0 && (
-            <select
-              value={selectedMetric}
-              onChange={(e) => setSelectedMetric(e.target.value)}
-              className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-zinc-500"
-            >
-              {uniqueMetricNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          )}
+        <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+          <button
+            onClick={handleReparse}
+            disabled={reparsing}
+            className="px-3.5 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-medium flex items-center gap-1.5 transition disabled:opacity-50 border border-zinc-200 dark:border-zinc-700"
+            title="Заново просканировать все загруженные файлы анализов и извлечь показатели"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${reparsing ? "animate-spin text-emerald-500" : ""}`} />
+            {reparsing ? "Сканирование..." : "Пересканировать бланки"}
+          </button>
 
           <button
             onClick={() => setShowAddModal(true)}
             className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
-            Добавить анализ вручную
+            Добавить вручную
           </button>
         </div>
       </div>
 
-      {/* Chart Section */}
-      {filteredData.length === 0 ? (
+      {reparseMessage && (
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{reparseMessage}</span>
+        </div>
+      )}
+
+      {/* Panels Navigation Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-zinc-200 dark:border-zinc-800">
+        {PANELS.map((panel) => {
+          const Icon = panel.icon;
+          const isActive = activePanelId === panel.id;
+          // Count indicators in this panel
+          const count = panel.id === "all"
+            ? Array.from(new Set(metrics.map((m) => m.metric_name))).length
+            : Array.from(
+                new Set(
+                  metrics
+                    .filter((m) =>
+                      panel.matchPatterns.some((p) =>
+                        m.metric_name.toLowerCase().includes(p.toLowerCase())
+                      )
+                    )
+                    .map((m) => m.metric_name)
+                )
+              ).length;
+
+          return (
+            <button
+              key={panel.id}
+              onClick={() => setActivePanelId(panel.id)}
+              className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-medium rounded-t-xl transition-all whitespace-nowrap border-b-2 -mb-[1px] ${
+                isActive
+                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-zinc-900 shadow-sm"
+                  : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{panel.shortName}</span>
+              {count > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                    isActive
+                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                      : "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Active Panel Description & Clinical Goal */}
+      <div className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">{activePanel.name}</span>
+            <span className="text-zinc-400">•</span>
+            <span className="text-zinc-500 dark:text-zinc-400">{activePanel.description}</span>
+          </div>
+          <p className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">Цель панели:</span> {activePanel.goal}
+          </p>
+        </div>
+
+        {panelMetricNames.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            <label className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">График:</label>
+            <select
+              value={selectedMetric}
+              onChange={(e) => setSelectedMetric(e.target.value)}
+              className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs rounded-xl px-3 py-1.5 outline-none focus:border-emerald-500"
+            >
+              {panelMetricNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Metrics Summary Chips / Cards within Active Panel */}
+      {panelSummaryList.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 px-1">
+            <span className="font-medium">Биомаркеры в панели (нажмите для отображения графика)</span>
+            <span>Найдено: {panelSummaryList.length}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+            {panelSummaryList.map(({ latest, history }) => {
+              const isSelected = selectedMetric === latest.metric_name;
+              const isHigh = latest.status === "high";
+              const isLow = latest.status === "low";
+              const isBorderline = latest.status === "borderline";
+
+              return (
+                <button
+                  key={latest.metric_name}
+                  onClick={() => setSelectedMetric(latest.metric_name)}
+                  className={`text-left p-3 rounded-xl border transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? "border-emerald-500 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500 shadow-sm"
+                      : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-1 mb-1">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">
+                      {latest.metric_name}
+                    </span>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase shrink-0 ${
+                        isHigh
+                          ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
+                          : isLow
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                          : isBorderline
+                          ? "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-400"
+                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                      }`}
+                    >
+                      {isHigh ? "Выше" : isLow ? "Ниже" : isBorderline ? "Граница" : "Норма"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between mt-1">
+                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                      {latest.value}{" "}
+                      <span className="text-[10px] font-normal text-zinc-500">{latest.unit}</span>
+                    </span>
+                    {history.length > 1 && (
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {history.length} изм.
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 flex items-center justify-between">
+                    <span>{latest.record_date}</span>
+                    {latest.reference_min !== undefined && latest.reference_max !== undefined && (
+                      <span>
+                        {latest.reference_min}–{latest.reference_max}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Main Chart Section */}
+      {chartData.length === 0 ? (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-12 text-center shadow-sm">
           <LineChartIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Нет данных для построения графика</p>
+          <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Нет данных по этой панели</p>
           <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto">
-            Загрузите бланк анализов в папку «Лабораторные анализы» или добавьте показатели вручную.
+            Нажмите кнопку «Пересканировать бланки» выше, чтобы извлечь показатели из загруженных PDF и анализов, или внесите данные вручную.
           </p>
         </div>
       ) : (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm dark:shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
             <div>
-              <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                {selectedMetric}
-                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">({currentUnit})</span>
-              </h4>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Референсный диапазон:{" "}
-                {currentRefMin !== null ? currentRefMin : "—"} —{" "}
-                {currentRefMax !== null ? currentRefMax : "—"} {currentUnit}
+              <div className="flex items-center gap-2.5">
+                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                  {selectedMetric}
+                </h4>
+                <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                  {currentUnit}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Референсный диапазон нормы:{" "}
+                <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                  {currentRefMin !== null && currentRefMin !== undefined ? currentRefMin : "—"} —{" "}
+                  {currentRefMax !== null && currentRefMax !== undefined ? currentRefMax : "—"} {currentUnit}
+                </span>
               </p>
             </div>
 
-            {/* Latest Value Banner */}
-            <div className="text-right">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 block">Последнее значение</span>
-              <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                {filteredData[filteredData.length - 1].value}{" "}
-                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{currentUnit}</span>
-              </span>
+            {/* Latest Value and Trend */}
+            <div className="flex items-center gap-4 text-right">
+              {trendDelta !== null && (
+                <div className="flex flex-col items-end">
+                  <span className="text-[11px] text-zinc-400">Тренд</span>
+                  <div
+                    className={`flex items-center gap-1 text-xs font-semibold ${
+                      trendDelta > 0
+                        ? "text-rose-600 dark:text-rose-400"
+                        : trendDelta < 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-zinc-500"
+                    }`}
+                  >
+                    {trendDelta > 0 ? (
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    ) : trendDelta < 0 ? (
+                      <TrendingDown className="w-3.5 h-3.5" />
+                    ) : (
+                      <Minus className="w-3.5 h-3.5" />
+                    )}
+                    <span>
+                      {trendDelta > 0 ? `+${trendDelta}` : trendDelta} {currentUnit}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">
+                  Текущее ({chartData[chartData.length - 1].record_date})
+                </span>
+                <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                  {latestMetricValue}{" "}
+                  <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">{currentUnit}</span>
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Interactive Chart */}
-          <div className="h-72 w-full pt-4">
+          <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={filteredData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e4e4e7"} opacity={0.8} />
-                <XAxis dataKey="record_date" stroke={isDark ? "#71717a" : "#a1a1aa"} fontSize={12} tickLine={false} />
-                <YAxis stroke={isDark ? "#71717a" : "#a1a1aa"} fontSize={12} tickLine={false} domain={["auto", "auto"]} />
+              <LineChart data={chartData} margin={{ top: 12, right: 30, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#f4f4f5"} />
+                <XAxis 
+                  dataKey="record_date" 
+                  stroke={isDark ? "#71717a" : "#a1a1aa"} 
+                  fontSize={12} 
+                  tickLine={false} 
+                />
+                <YAxis 
+                  stroke={isDark ? "#71717a" : "#a1a1aa"} 
+                  fontSize={12} 
+                  tickLine={false} 
+                  domain={["auto", "auto"]} 
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: isDark ? "#18181b" : "#ffffff",
@@ -188,30 +561,41 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     fontSize: "12px",
                   }}
                   formatter={(val: any) => [`${val} ${currentUnit}`, selectedMetric]}
+                  labelFormatter={(lbl) => `Дата: ${lbl}`}
                 />
                 {currentRefMin !== null && currentRefMin !== undefined && (
                   <ReferenceLine
                     y={currentRefMin}
-                    stroke={isDark ? "#a1a1aa" : "#71717a"}
+                    stroke={isDark ? "#60a5fa" : "#3b82f6"}
                     strokeDasharray="4 4"
-                    label={{ value: `Мин: ${currentRefMin}`, fill: isDark ? "#a1a1aa" : "#71717a", fontSize: 10, position: "insideBottomLeft" }}
+                    label={{ 
+                      value: `Нижняя норма (${currentRefMin})`, 
+                      fill: isDark ? "#60a5fa" : "#3b82f6", 
+                      fontSize: 10, 
+                      position: "insideBottomLeft" 
+                    }}
                   />
                 )}
                 {currentRefMax !== null && currentRefMax !== undefined && (
                   <ReferenceLine
                     y={currentRefMax}
-                    stroke={isDark ? "#71717a" : "#a1a1aa"}
+                    stroke={isDark ? "#f87171" : "#ef4444"}
                     strokeDasharray="4 4"
-                    label={{ value: `Макс: ${currentRefMax}`, fill: isDark ? "#71717a" : "#a1a1aa", fontSize: 10, position: "insideTopLeft" }}
+                    label={{ 
+                      value: `Верхняя норма (${currentRefMax})`, 
+                      fill: isDark ? "#f87171" : "#ef4444", 
+                      fontSize: 10, 
+                      position: "insideTopLeft" 
+                    }}
                   />
                 )}
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={isDark ? "#e4e4e7" : "#09090b"}
+                  stroke="#10b981"
                   strokeWidth={2.5}
-                  dot={{ fill: isDark ? "#e4e4e7" : "#09090b", r: 4 }}
-                  activeDot={{ r: 6, fill: isDark ? "#ffffff" : "#18181b" }}
+                  dot={{ fill: "#10b981", r: 4 }}
+                  activeDot={{ r: 6, fill: "#059669" }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -220,19 +604,28 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       )}
 
       {/* History Table */}
-      {filteredData.length > 0 && (
+      {chartData.length > 0 && (
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
-          <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-              История измерений ({selectedMetric})
+              Хронология измерений ({selectedMetric})
             </h4>
+            <span className="text-xs text-zinc-400">Всего точек: {chartData.length}</span>
           </div>
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {filteredData.map((row) => (
-              <div key={row.id} className="p-3.5 flex items-center justify-between text-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition">
+            {chartData.map((row) => (
+              <div 
+                key={row.id} 
+                className="p-3.5 flex items-center justify-between text-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition"
+              >
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                   <span className="text-zinc-800 dark:text-zinc-200 font-medium">{row.record_date}</span>
+                  {row.notes && (
+                    <span className="text-[11px] text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                      {row.notes}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center space-x-4">
                   <span className="font-semibold text-zinc-900 dark:text-zinc-100">
@@ -241,17 +634,26 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   <span
                     className={`px-2.5 py-0.5 rounded-full font-medium border ${
                       row.status === "normal"
-                        ? "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/40"
                         : row.status === "high"
                         ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900/40"
-                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/40"
+                        : row.status === "low"
+                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/40"
+                        : "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-900/40"
                     }`}
                   >
-                    {row.status === "normal" ? "Норма" : row.status === "high" ? "Повышен" : "Понижен"}
+                    {row.status === "normal"
+                      ? "Норма"
+                      : row.status === "high"
+                      ? "Повышен"
+                      : row.status === "low"
+                      ? "Понижен"
+                      : "Граница"}
                   </span>
                   <button
                     onClick={() => handleDeleteMetric(row.id)}
                     className="text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-red-400 transition"
+                    title="Удалить точку"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -283,8 +685,8 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   type="text"
                   value={newMetric.metric_name || ""}
                   onChange={(e) => setNewMetric({ ...newMetric, metric_name: e.target.value })}
-                  placeholder="напр. Ферритин, Витамин D, Глюкоза..."
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
+                  placeholder="напр. Холестерин ЛПНП (LDL), Гемоглобин..."
+                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   required
                 />
               </div>
@@ -297,7 +699,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     step="0.01"
                     value={newMetric.value || ""}
                     onChange={(e) => setNewMetric({ ...newMetric, value: parseFloat(e.target.value) })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                     required
                   />
                 </div>
@@ -307,8 +709,8 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                     type="text"
                     value={newMetric.unit || ""}
                     onChange={(e) => setNewMetric({ ...newMetric, unit: e.target.value })}
-                    placeholder="мкг/л, нг/мл..."
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
+                    placeholder="ммоль/л, г/л..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   />
                 </div>
               </div>
@@ -319,9 +721,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   <input
                     type="number"
                     step="0.01"
-                    value={newMetric.reference_min || ""}
+                    value={newMetric.reference_min ?? ""}
                     onChange={(e) => setNewMetric({ ...newMetric, reference_min: parseFloat(e.target.value) || undefined })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   />
                 </div>
                 <div>
@@ -329,9 +731,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   <input
                     type="number"
                     step="0.01"
-                    value={newMetric.reference_max || ""}
+                    value={newMetric.reference_max ?? ""}
                     onChange={(e) => setNewMetric({ ...newMetric, reference_max: parseFloat(e.target.value) || undefined })}
-                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   />
                 </div>
               </div>
@@ -342,7 +744,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                   type="date"
                   value={newMetric.record_date || ""}
                   onChange={(e) => setNewMetric({ ...newMetric, record_date: e.target.value })}
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
+                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-none"
                   required
                 />
               </div>

@@ -229,6 +229,14 @@ export const api = {
     if (!res.ok) throw new Error("Failed to delete metric");
   },
 
+  async reparseLabs(patientId: number): Promise<{ success: boolean; total_metrics: number }> {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/reparse_labs`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to reparse lab metrics");
+    return res.json();
+  },
+
   // Chat
   async getChatSessions(patientId: number): Promise<ChatSession[]> {
     const res = await fetch(`${API_BASE}/patients/${patientId}/chat/sessions`);

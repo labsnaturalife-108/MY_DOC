@@ -228,7 +228,10 @@ async def upload_document(
 
     # 2. Extract medical lab metrics if it is an analysis or contains metrics
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    extracted_metrics = parse_lab_metrics(text_content, default_date=today_str)
+    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    p_age = patient.age if (patient and patient.age) else 50
+    p_gender = patient.gender if (patient and patient.gender) else "male"
+    extracted_metrics = parse_lab_metrics(text_content, default_date=today_str, patient_age=p_age, patient_gender=p_gender)
     added_metrics_count = 0
     for m in extracted_metrics:
         lab_m = models.LabMetric(
@@ -356,6 +359,57 @@ def get_lab_metrics(patient_id: int, metric_name: Optional[str] = None, db: Sess
     if metric_name:
         query = query.filter(models.LabMetric.metric_name == metric_name)
     return query.order_by(models.LabMetric.record_date.asc()).all()
+
+@app.post("/api/patients/{patient_id}/reparse_labs")
+def reparse_patient_labs(patient_id: int, db: Session = Depends(get_db)):
+    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Пациент не найден")
+    
+    docs = db.query(models.Document).filter(
+        models.Document.patient_id == patient_id,
+        models.Document.extracted_text.isnot(None)
+    ).all()
+
+    # Clear previous metrics for this patient to ensure fresh clean parsing
+    db.query(models.LabMetric).filter(models.LabMetric.patient_id == patient_id).delete()
+
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    total_added = 0
+    seen = set()
+
+    for doc in docs:
+        if not doc.extracted_text or not doc.extracted_text.strip():
+            continue
+        doc_date = doc.created_at.strftime("%Y-%m-%d") if doc.created_at else today_str
+        metrics = parse_lab_metrics(
+            doc.extracted_text,
+            default_date=doc_date,
+            patient_age=patient.age or 50,
+            patient_gender=patient.gender or "male"
+        )
+        for m in metrics:
+            key = (m["metric_name"], m["record_date"], round(m["value"], 3))
+            if key in seen:
+                continue
+            seen.add(key)
+            lab_m = models.LabMetric(
+                patient_id=patient_id,
+                document_id=doc.id,
+                metric_name=m["metric_name"],
+                value=m["value"],
+                unit=m["unit"],
+                reference_min=m["reference_min"],
+                reference_max=m["reference_max"],
+                status=m["status"],
+                record_date=m["record_date"],
+                notes=m["notes"]
+            )
+            db.add(lab_m)
+            total_added += 1
+
+    db.commit()
+    return {"success": True, "total_metrics": total_added}
 
 @app.post("/api/patients/{patient_id}/labs", response_model=schemas.LabMetricResponse)
 def add_lab_metric(patient_id: int, data: schemas.LabMetricCreate, db: Session = Depends(get_db)):
