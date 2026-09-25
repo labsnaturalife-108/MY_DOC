@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Check, Server, Key, Cpu, RefreshCw } from "lucide-react";
+import { X, Check, Server, Key, Cpu, RefreshCw, Sun, Moon, Monitor } from "lucide-react";
 import { api } from "@/lib/api";
+import { useTheme } from "@/context/ThemeContext";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onRefreshStatus }) => {
+  const { theme, setTheme } = useTheme();
   const [lmstudioUrl, setLmstudioUrl] = useState("http://localhost:1234/v1");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434/v1");
   
@@ -97,36 +99,82 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-zinc-800 border border-zinc-700/80 text-zinc-300">
+            <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-250 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300">
               <Server className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-zinc-100">Настройки нейросетей и подключений</h3>
-              <p className="text-xs text-zinc-400">Локальные серверы и облачные API</p>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Настройки системы</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Тема оформления, локальные серверы и API</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white rounded-lg">
+          <button onClick={onClose} className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg transition">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSaveAll} className="space-y-5">
+          {/* Section 0: Theme Switcher */}
+          <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 mb-1 block">
+              <Sun className="w-4 h-4 text-amber-500" />
+              Тема интерфейса
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setTheme("light")}
+                className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  theme === "light"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 shadow-sm"
+                    : "bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+                Светлая
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme("dark")}
+                className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  theme === "dark"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 shadow-sm"
+                    : "bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5 text-sky-400" />
+                Темная
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme("system")}
+                className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition ${
+                  theme === "system"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 shadow-sm"
+                    : "bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5 text-zinc-400" />
+                Системная
+              </button>
+            </div>
+          </div>
+
           {/* Section 1: Local LM Studio */}
-          <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-3">
+          <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-zinc-400" />
+              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 Локальный LM Studio (Конфиденциально)
               </span>
               <button
                 type="button"
                 onClick={handleTestLocal}
                 disabled={testing}
-                className="text-[11px] text-zinc-200 hover:text-white flex items-center gap-1 bg-zinc-800 hover:bg-zinc-750 px-2.5 py-1 rounded-lg border border-zinc-700 transition"
+                className="text-[11px] text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white flex items-center gap-1 bg-zinc-200/80 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 px-2.5 py-1 rounded-lg border border-zinc-300 dark:border-zinc-700 transition"
               >
                 <RefreshCw className={`w-3 h-3 ${testing ? 'animate-spin' : ''}`} />
                 Проверить связь
@@ -134,83 +182,83 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             </div>
 
             <div>
-              <label className="text-[11px] text-zinc-400 mb-1 block">API Endpoint LM Studio</label>
+              <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">API Endpoint LM Studio</label>
               <input
                 type="text"
                 value={lmstudioUrl}
                 onChange={(e) => setLmstudioUrl(e.target.value)}
                 placeholder="http://localhost:1234/v1"
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
               />
             </div>
 
             {testResult && (
-              <p className="text-xs p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200">
+              <p className="text-xs p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200">
                 {testResult}
               </p>
             )}
           </div>
 
           {/* Section 2: Cloud API Keys */}
-          <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-3">
-            <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5 mb-1 block">
-              <Key className="w-4 h-4 text-zinc-400" />
+          <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 mb-1 block">
+              <Key className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
               Облачные API Ключи (Шифруются и сохраняются локально)
             </span>
 
             <div className="space-y-2.5">
               <div>
-                <label className="text-[11px] text-zinc-400 mb-1 block">OpenAI API Key (GPT-4o)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">OpenAI API Key (GPT-4o)</label>
                 <input
                   type="password"
                   value={keys.api_key_openai}
                   onChange={(e) => setKeys({ ...keys, api_key_openai: e.target.value })}
                   placeholder="sk-proj-..."
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-400 mb-1 block">Anthropic API Key (Claude 3.5 Sonnet)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Anthropic API Key (Claude 3.5 Sonnet)</label>
                 <input
                   type="password"
                   value={keys.api_key_anthropic}
                   onChange={(e) => setKeys({ ...keys, api_key_anthropic: e.target.value })}
                   placeholder="sk-ant-..."
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-400 mb-1 block">Google Gemini & Antigravity API Key (Gemini 3.8, Lite, Antigravity)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Google Gemini & Antigravity API Key</label>
                 <input
                   type="password"
                   value={keys.api_key_gemini}
                   onChange={(e) => setKeys({ ...keys, api_key_gemini: e.target.value })}
                   placeholder="AIzaSy..."
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-400 mb-1 block">DeepSeek API Key (V3, R1)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">DeepSeek API Key (V3, R1)</label>
                 <input
                   type="password"
                   value={keys.api_key_deepseek}
                   onChange={(e) => setKeys({ ...keys, api_key_deepseek: e.target.value })}
                   placeholder="sk-..."
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-400 mb-1 block">xAI Grok API Key</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">xAI Grok API Key</label>
                 <input
                   type="password"
                   value={keys.api_key_grok}
                   onChange={(e) => setKeys({ ...keys, api_key_grok: e.target.value })}
                   placeholder="xai-..."
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
                 />
               </div>
             </div>
@@ -220,15 +268,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs hover:bg-zinc-750 transition"
+              className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs transition"
             >
               Закрыть
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-zinc-100 hover:bg-white text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition"
+              className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition"
             >
-              {savedSuccess ? <Check className="w-4 h-4 text-emerald-600" /> : null}
+              {savedSuccess ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : null}
               {savedSuccess ? "Сохранено!" : "Сохранить настройки"}
             </button>
           </div>

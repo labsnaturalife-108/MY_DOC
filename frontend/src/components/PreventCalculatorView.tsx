@@ -136,36 +136,40 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
     const cat = (category || "").toLowerCase();
     if (cat.includes("низк") || cat.includes("low")) {
       return {
-        bg: "bg-emerald-950/30 border-emerald-800/60 text-emerald-300",
-        badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-        accent: "text-emerald-400",
+        bg: "bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300",
+        badge: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30",
+        accent: "text-emerald-600 dark:text-emerald-400",
         bar: "bg-emerald-500",
+        title: "text-emerald-900 dark:text-zinc-100",
         icon: ShieldCheck
       };
     }
     if (cat.includes("погран") || cat.includes("borderline")) {
       return {
-        bg: "bg-amber-950/30 border-amber-800/60 text-amber-300",
-        badge: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-        accent: "text-amber-400",
+        bg: "bg-amber-50/70 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/60 text-amber-800 dark:text-amber-300",
+        badge: "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/30",
+        accent: "text-amber-600 dark:text-amber-400",
         bar: "bg-amber-500",
+        title: "text-amber-900 dark:text-zinc-100",
         icon: AlertTriangle
       };
     }
     if (cat.includes("умерен") || cat.includes("промежут") || cat.includes("intermediate")) {
       return {
-        bg: "bg-orange-950/30 border-orange-800/60 text-orange-300",
-        badge: "bg-orange-500/10 text-orange-400 border-orange-500/30",
-        accent: "text-orange-400",
+        bg: "bg-orange-50/70 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800/60 text-orange-800 dark:text-orange-300",
+        badge: "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-500/30",
+        accent: "text-orange-600 dark:text-orange-400",
         bar: "bg-orange-500",
+        title: "text-orange-900 dark:text-zinc-100",
         icon: TrendingUp
       };
     }
     return {
-      bg: "bg-rose-950/30 border-rose-800/60 text-rose-300",
-      badge: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-      accent: "text-rose-400",
+      bg: "bg-rose-50/70 border-rose-200 dark:bg-rose-950/30 dark:border-rose-800/60 text-rose-800 dark:text-rose-300",
+      badge: "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-500/30",
+      accent: "text-rose-600 dark:text-rose-400",
       bar: "bg-rose-500",
+      title: "text-rose-900 dark:text-zinc-100",
       icon: ShieldAlert
     };
   };
@@ -191,29 +195,29 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Top Header Card */}
-      <div className="p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl relative overflow-hidden">
+      <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl relative overflow-hidden transition-colors">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm">
                 <HeartPulse className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-zinc-100 tracking-tight">
+                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
                     AHA PREVENT™ Calculator
                   </h2>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                     AHA/ACC 2023–2024
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   Официальный 10-летний и 30-летний калькулятор суммарного сердечно-сосудистого риска
                 </p>
               </div>
             </div>
-            <p className="text-xs text-zinc-400 leading-relaxed pt-1">
-              Модель <strong className="text-zinc-300">PREVENT</strong> (Predicting Risk of cardiovascular disease EVENTs) 
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed pt-1">
+              Модель <strong className="text-zinc-800 dark:text-zinc-300">PREVENT</strong> (Predicting Risk of cardiovascular disease EVENTs) 
               впервые объединяет оценку атеросклеротических осложнений (инфаркт, инсульт) с риском сердечной недостаточности (Heart Failure) 
               и функцией почек (eGFR), обеспечивая точнейшую персонализацию терапии статинами и контроля давления.
             </p>
@@ -223,16 +227,16 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             <button
               onClick={() => loadPreventData()}
               title="Заново извлечь лабораторные показатели из бланков PDF"
-              className="px-3.5 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-medium flex items-center gap-2 transition shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white text-xs font-medium flex items-center gap-2 transition shadow-sm"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+              <RotateCcw className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
               Извлечь из анализов
             </button>
             <a
               href="https://professional.heart.org/en/guidelines-and-statements/prevent-calculator"
               target="_blank"
               rel="noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-400 hover:text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition"
+              className="px-3.5 py-2 rounded-xl bg-zinc-100/60 dark:bg-zinc-800/50 hover:bg-zinc-200/80 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               AHA Руководство
@@ -242,15 +246,15 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
 
         {/* Source tags */}
         {Object.keys(sourcesDetected).length > 0 && (
-          <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-wrap items-center gap-2 text-[11px] text-zinc-400">
-            <span className="flex items-center gap-1 text-zinc-400 font-medium">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800/80 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               Данные получены из документов:
             </span>
             {Object.entries(sourcesDetected).map(([param, fname]) => (
               <span 
                 key={param} 
-                className="px-2 py-0.5 rounded-md bg-zinc-800/70 border border-zinc-700/60 text-zinc-300 font-mono text-[10px] flex items-center gap-1"
+                className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 font-mono text-[10px] flex items-center gap-1"
               >
                 <FileText className="w-3 h-3 text-zinc-400" />
                 {fname}
@@ -264,14 +268,14 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
       {riskResult && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Total CVD Risk (Main) */}
-          <div className={`p-6 rounded-3xl border shadow-xl relative overflow-hidden transition ${theme.bg}`}>
+          <div className={`p-6 rounded-3xl border shadow-sm dark:shadow-xl relative overflow-hidden transition ${theme.bg}`}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block mb-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
                   10-летний суммарный риск
                 </span>
-                <h3 className="text-lg font-bold text-zinc-100 flex items-center gap-1.5">
-                  <Heart className="w-4 h-4 text-rose-400" />
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Heart className="w-4 h-4 text-rose-500" />
                   Total CVD Risk
                 </h3>
               </div>
@@ -281,93 +285,93 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
             </div>
 
             <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-4xl font-extrabold tracking-tight text-white font-mono">
+              <span className="text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white font-mono">
                 {riskResult.cvd_10yr}%
               </span>
-              <span className="text-xs text-zinc-400">вероятность за 10 лет</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">вероятность за 10 лет</span>
             </div>
 
             {/* Gauge progress bar */}
-            <div className="w-full bg-zinc-800/80 rounded-full h-2 mb-3 overflow-hidden">
+            <div className="w-full bg-zinc-200/80 dark:bg-zinc-800/80 rounded-full h-2 mb-3 overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all duration-500 ${theme.bar}`}
                 style={{ width: `${Math.min(100, (riskResult.cvd_10yr / 25) * 100)}%` }}
               />
             </div>
 
-            <p className="text-xs text-zinc-300 leading-snug">
-              Категория: <strong className="text-white">{riskResult.risk_category}</strong>. 
+            <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-snug">
+              Категория: <strong className="text-zinc-900 dark:text-white">{riskResult.risk_category}</strong>. 
               Включает инфаркт, инсульт и сердечную недостаточность.
             </p>
           </div>
 
           {/* Card 2: ASCVD Risk (Atherosclerosis) */}
-          <div className="p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl relative">
+          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl relative">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block mb-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
                   10-летний риск атеросклероза
                 </span>
-                <h3 className="text-lg font-bold text-zinc-100 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-amber-400" />
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-amber-500" />
                   ASCVD Risk
                 </h3>
               </div>
-              <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono">
+              <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 text-[11px] font-mono border">
                 Инфаркт / Инсульт
               </span>
             </div>
 
             <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-4xl font-extrabold tracking-tight text-white font-mono">
+              <span className="text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white font-mono">
                 {riskResult.ascvd_10yr}%
               </span>
-              <span className="text-xs text-zinc-400">ишемические события</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">ишемические события</span>
             </div>
 
-            <div className="w-full bg-zinc-800/80 rounded-full h-2 mb-3 overflow-hidden">
+            <div className="w-full bg-zinc-200/80 dark:bg-zinc-800/80 rounded-full h-2 mb-3 overflow-hidden">
               <div 
                 className="h-full bg-amber-500 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, (riskResult.ascvd_10yr / 20) * 100)}%` }}
               />
             </div>
 
-            <p className="text-xs text-zinc-400 leading-snug">
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-snug">
               Первичный риск нефатального инфаркта миокарда, фатального исхода ИБС или ишемического инсульта.
             </p>
           </div>
 
           {/* Card 3: Heart Failure Risk & 30-Year Horizon */}
-          <div className="p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl relative">
+          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl relative">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 block mb-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">
                   Сердечная недостаточность
                 </span>
-                <h3 className="text-lg font-bold text-zinc-100 flex items-center gap-1.5">
-                  <Droplets className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Droplets className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   Heart Failure (10 лет)
                 </h3>
               </div>
-              <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[11px] font-mono">
+              <span className="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20 text-[11px] font-mono border">
                 ХСН
               </span>
             </div>
 
             <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-4xl font-extrabold tracking-tight text-white font-mono">
+              <span className="text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white font-mono">
                 {riskResult.heart_failure_10yr}%
               </span>
-              <span className="text-xs text-zinc-400">риск декомпенсации</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">риск декомпенсации</span>
             </div>
 
             {/* 30-Year Forecast Preview */}
-            <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
-              <span className="text-zinc-400">30-летний горизонт:</span>
+            <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400">30-летний горизонт:</span>
               <div className="flex items-center gap-2 font-mono">
-                <span className="text-zinc-300">CVD: <strong className="text-white">{riskResult.cvd_30yr ?? "—"}%</strong></span>
-                <span className="text-zinc-500">|</span>
-                <span className="text-zinc-300">ASCVD: <strong className="text-white">{riskResult.ascvd_30yr ?? "—"}%</strong></span>
+                <span className="text-zinc-700 dark:text-zinc-300">CVD: <strong className="text-zinc-900 dark:text-white">{riskResult.cvd_30yr ?? "—"}%</strong></span>
+                <span className="text-zinc-300 dark:text-zinc-600">|</span>
+                <span className="text-zinc-700 dark:text-zinc-300">ASCVD: <strong className="text-zinc-900 dark:text-white">{riskResult.ascvd_30yr ?? "—"}%</strong></span>
               </div>
             </div>
           </div>
@@ -376,18 +380,18 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
 
       {/* Clinical Modifiers & Risk Enhancers Alert */}
       {riskModifiers.length > 0 && (
-        <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-800/40 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <h4 className="text-sm font-semibold text-amber-200">
+            <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
               Выявлены клинические усилители риска (AHA/ACC Risk Enhancers):
             </h4>
-            <ul className="text-xs text-amber-300/90 list-disc list-inside space-y-0.5">
+            <ul className="text-xs text-amber-800 dark:text-amber-300/90 list-disc list-inside space-y-0.5">
               {riskModifiers.map((mod, i) => (
                 <li key={i}>{mod}</li>
               ))}
             </ul>
-            <p className="text-[11px] text-zinc-400 pt-1">
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
               Примечание эксперта: Согласно руководству AHA/ACC 2023, наличие визуализированного субклинического атеросклероза 
               (бляшки в сонных артериях) или повышенного уровня Lp(a) реклассифицирует пациента в группу высокого приоритета 
               для медикаментозной коррекции липидов (статины), даже если 10-летний базовый балл находится в диапазоне низкого или умеренного риска.
@@ -397,21 +401,21 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
       )}
 
       {/* Interactive Parameters Panel */}
-      <div className="p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl space-y-6">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+      <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl space-y-6 transition-colors">
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/80 pb-4">
           <div>
-            <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-              <Scale className="w-4 h-4 text-zinc-400" />
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <Scale className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
               Клинические параметры для расчета
             </h3>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Вы можете изменить значения параметров, чтобы оценить эффект снижения давления или холестерина
             </p>
           </div>
           <button
             onClick={() => handleRecalculate()}
             disabled={calculating}
-            className="px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow-md"
+            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow-sm"
           >
             {calculating ? (
               <>
@@ -431,15 +435,15 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Sex */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Пол пациента</label>
-            <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800">
+            <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Пол пациента</label>
+            <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => { setSex("male"); handleRecalculate({ sex: "male" }); }}
                 className={`py-1.5 rounded-lg text-xs font-medium transition ${
                   sex === "male"
-                    ? "bg-zinc-800 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                 }`}
               >
                 Мужской
@@ -449,8 +453,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 onClick={() => { setSex("female"); handleRecalculate({ sex: "female" }); }}
                 className={`py-1.5 rounded-lg text-xs font-medium transition ${
                   sex === "female"
-                    ? "bg-zinc-800 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                 }`}
               >
                 Женский
@@ -461,8 +465,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Age */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">Возраст (лет)</label>
-              <span className="text-xs font-mono text-zinc-400">{age} лет</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Возраст (лет)</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{age} лет</span>
             </div>
             <input
               type="number"
@@ -474,15 +478,15 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 setAge(val);
               }}
               onBlur={() => handleRecalculate({ age: Number(age) })}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+              className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
             />
           </div>
 
           {/* Total Cholesterol */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">Общий холестерин</label>
-              <span className="text-xs font-mono text-zinc-400">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Общий холестерин</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
                 {(totalCholMmol * 38.67).toFixed(0)} мг/дл
               </span>
             </div>
@@ -493,9 +497,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 value={totalCholMmol}
                 onChange={(e) => setTotalCholMmol(Number(e.target.value))}
                 onBlur={() => handleRecalculate({ total_cholesterol_mmol: Number(totalCholMmol) })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-zinc-500 font-sans">
+              <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
                 ммоль/л
               </span>
             </div>
@@ -504,8 +508,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* HDL Cholesterol */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">Холестерин ЛПВП (HDL)</label>
-              <span className="text-xs font-mono text-zinc-400">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Холестерин ЛПВП (HDL)</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
                 {(hdlCholMmol * 38.67).toFixed(0)} мг/дл
               </span>
             </div>
@@ -516,9 +520,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 value={hdlCholMmol}
                 onChange={(e) => setHdlCholMmol(Number(e.target.value))}
                 onBlur={() => handleRecalculate({ hdl_cholesterol_mmol: Number(hdlCholMmol) })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-zinc-500 font-sans">
+              <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
                 ммоль/л
               </span>
             </div>
@@ -527,8 +531,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Systolic BP */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">Систолическое АД</label>
-              <span className="text-xs font-mono text-zinc-400">САД</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Систолическое АД</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">САД</span>
             </div>
             <div className="relative">
               <input
@@ -536,9 +540,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 value={systolicBp}
                 onChange={(e) => setSystolicBp(Number(e.target.value))}
                 onBlur={() => handleRecalculate({ systolic_bp: Number(systolicBp) })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-zinc-500 font-sans">
+              <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
                 мм рт. ст.
               </span>
             </div>
@@ -547,8 +551,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* BMI */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">Индекс массы тела (ИМТ)</label>
-              <span className="text-xs font-mono text-zinc-400">кг/м²</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Индекс массы тела (ИМТ)</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">кг/м²</span>
             </div>
             <input
               type="number"
@@ -556,15 +560,15 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               value={bmi}
               onChange={(e) => setBmi(Number(e.target.value))}
               onBlur={() => handleRecalculate({ bmi: Number(bmi) })}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+              className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
             />
           </div>
 
           {/* eGFR / Creatinine */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">СКФ (eGFR CKD-EPI)</label>
-              <span className="text-xs font-mono text-zinc-400">{creatinineUmol} мкмоль/л</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">СКФ (eGFR CKD-EPI)</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">{creatinineUmol} мкмоль/л</span>
             </div>
             <div className="relative">
               <input
@@ -573,9 +577,9 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 value={egfr}
                 onChange={(e) => setEgfr(Number(e.target.value))}
                 onBlur={() => handleRecalculate({ egfr: Number(egfr) })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-zinc-500 font-sans">
+              <span className="absolute right-3 top-2.5 text-xs text-zinc-400 dark:text-zinc-500 font-sans">
                 мл/мин/1.73м²
               </span>
             </div>
@@ -584,8 +588,8 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
           {/* Creatinine */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <label className="text-xs font-semibold text-zinc-300">Креатинин сыворотки</label>
-              <span className="text-xs font-mono text-zinc-400">мкмоль/л</span>
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Креатинин сыворотки</label>
+              <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">мкмоль/л</span>
             </div>
             <input
               type="number"
@@ -593,7 +597,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
               value={creatinineUmol}
               onChange={(e) => setCreatinineUmol(Number(e.target.value))}
               onBlur={() => handleRecalculate({ creatinine_umol: Number(creatinineUmol) })}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 font-mono outline-none focus:border-zinc-500"
+              className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 font-mono outline-none focus:border-zinc-500"
             />
           </div>
         </div>
@@ -601,7 +605,7 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
         {/* Toggles / Clinical Switches */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
           {/* Diabetes */}
-          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-950 border border-zinc-800/80 cursor-pointer hover:border-zinc-700 transition">
+          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition">
             <input
               type="checkbox"
               checked={hasDiabetes}
@@ -610,16 +614,16 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 setHasDiabetes(val);
                 handleRecalculate({ has_diabetes: val });
               }}
-              className="w-4 h-4 rounded text-rose-500 bg-zinc-900 border-zinc-700 focus:ring-0"
+              className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-200">Сахарный диабет</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Сахарный диабет</p>
               <p className="text-[11px] text-zinc-500">Гликемический статус</p>
             </div>
           </label>
 
           {/* Smoking */}
-          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-950 border border-zinc-800/80 cursor-pointer hover:border-zinc-700 transition">
+          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition">
             <input
               type="checkbox"
               checked={currentSmoker}
@@ -628,16 +632,16 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 setCurrentSmoker(val);
                 handleRecalculate({ current_smoker: val });
               }}
-              className="w-4 h-4 rounded text-rose-500 bg-zinc-900 border-zinc-700 focus:ring-0"
+              className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-200">Курение</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Курение</p>
               <p className="text-[11px] text-zinc-500">Текущий курильщик</p>
             </div>
           </label>
 
           {/* HTN meds */}
-          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-950 border border-zinc-800/80 cursor-pointer hover:border-zinc-700 transition">
+          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition">
             <input
               type="checkbox"
               checked={onHtnMeds}
@@ -646,16 +650,16 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 setOnHtnMeds(val);
                 handleRecalculate({ on_htn_meds: val });
               }}
-              className="w-4 h-4 rounded text-rose-500 bg-zinc-900 border-zinc-700 focus:ring-0"
+              className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-200">Гипотензивные</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Гипотензивные</p>
               <p className="text-[11px] text-zinc-500">Прием препаратов от АД</p>
             </div>
           </label>
 
           {/* Statins */}
-          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-950 border border-zinc-800/80 cursor-pointer hover:border-zinc-700 transition">
+          <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/80 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition">
             <input
               type="checkbox"
               checked={onCholesterolMeds}
@@ -664,10 +668,10 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
                 setOnCholesterolMeds(val);
                 handleRecalculate({ on_cholesterol_meds: val });
               }}
-              className="w-4 h-4 rounded text-rose-500 bg-zinc-900 border-zinc-700 focus:ring-0"
+              className="w-4 h-4 rounded text-rose-500 bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 focus:ring-0"
             />
             <div>
-              <p className="text-xs font-semibold text-zinc-200">Статины / Терапия</p>
+              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Статины / Терапия</p>
               <p className="text-[11px] text-zinc-500">Липидоснижающие препараты</p>
             </div>
           </label>
@@ -678,45 +682,45 @@ export const PreventCalculatorView: React.FC<PreventCalculatorViewProps> = ({
       {riskResult && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Guidelines */}
-          <div className="lg:col-span-2 p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl space-y-4">
+          <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl space-y-4 transition-colors">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-zinc-300" />
-              <h3 className="text-base font-bold text-zinc-100">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-zinc-300" />
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                 Клинические рекомендации по гайдлайнам AHA/ACC 2023–2024
               </h3>
             </div>
 
             <div className="space-y-2.5">
               {riskResult.recommendations.map((rec, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed">
-                  <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+                <div key={idx} className="flex items-start gap-2.5 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 mt-1.5 shrink-0" />
                   <p>{rec}</p>
                 </div>
               ))}
             </div>
 
-            <div className="pt-3 border-t border-zinc-800/80 text-[11px] text-zinc-500">
+            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800/80 text-[11px] text-zinc-500">
               * Расчет риска носит информационный характер и предназначен для содействия врачу в рамках совместного принятия клинических решений (Shared Decision-Making).
             </div>
           </div>
 
           {/* Action Call to AI Doctor */}
-          <div className="p-6 rounded-3xl bg-zinc-900/90 border border-zinc-800 shadow-xl flex flex-col justify-between">
+          <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl flex flex-col justify-between transition-colors">
             <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200 shadow-md">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-200 shadow-sm">
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-zinc-100">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                 Консультация с ИИ-доктором
               </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 Передайте вычисленные параметры риска калькулятора PREVENT в диалоговое окно для полного клинического разбора с учетом всех анализов, УЗИ и индивидуальной тактики.
               </p>
             </div>
 
             <button
               onClick={handleConsultDoctor}
-              className="mt-6 w-full py-3 px-4 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-lg"
+              className="mt-6 w-full py-3 px-4 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
             >
               <Sparkles className="w-4 h-4" />
               Разобрать результат в чате

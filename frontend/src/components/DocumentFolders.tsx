@@ -106,15 +106,15 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
   const getFolderIcon = (ftype: string) => {
     switch (ftype) {
       case "analyses":
-        return <TestTube2 className="w-4 h-4 text-zinc-300" />;
+        return <TestTube2 className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />;
       case "researches":
-        return <Microscope className="w-4 h-4 text-zinc-300" />;
+        return <Microscope className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />;
       case "notes":
-        return <ClipboardList className="w-4 h-4 text-zinc-300" />;
+        return <ClipboardList className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />;
       case "knowledge_base":
-        return <BookOpen className="w-4 h-4 text-zinc-300" />;
+        return <BookOpen className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />;
       default:
-        return <FolderOpen className="w-4 h-4 text-zinc-300" />;
+        return <FolderOpen className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />;
     }
   };
 
@@ -136,22 +136,22 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
               onClick={() => handleSelectFolder(f.id)}
               className={`p-4 rounded-2xl text-left border transition relative overflow-hidden ${
                 isSelected
-                  ? "bg-zinc-900 border-zinc-600 shadow-md"
-                  : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900"
+                  ? "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 shadow-sm"
+                  : "bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-white dark:hover:bg-zinc-900"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-xl ${isSelected ? 'bg-zinc-800' : 'bg-zinc-850'}`}>
+                <div className={`p-2 rounded-xl ${isSelected ? 'bg-zinc-100 dark:bg-zinc-800' : 'bg-zinc-200/60 dark:bg-zinc-800'}`}>
                   {getFolderIcon(f.folder_type)}
                 </div>
-                <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-400 font-mono">
+                <span className="text-xs bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-600 dark:text-zinc-400 font-mono border border-zinc-200 dark:border-zinc-700">
                   {f.doc_count || 0}
                 </span>
               </div>
-              <h4 className={`text-sm font-semibold truncate ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>
+              <h4 className={`text-sm font-semibold truncate ${isSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300'}`}>
                 {f.name}
               </h4>
-              <p className="text-[11px] text-zinc-400 mt-0.5">
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                 {f.folder_type === "knowledge_base" ? "Статьи, книги, протоколы" : "Медицинские данные"}
               </p>
             </button>
@@ -160,7 +160,7 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       </div>
 
       {/* Upload Banner */}
-      <div className="bg-zinc-900 border border-dashed border-zinc-750 hover:border-zinc-500 rounded-2xl p-6 text-center transition relative">
+      <div className="bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-750 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-2xl p-6 text-center transition relative shadow-sm">
         <input
           type="file"
           id="file-upload-input"
@@ -172,21 +172,21 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
         <div className="flex flex-col items-center justify-center pointer-events-none">
           {uploading ? (
             <>
-              <Loader2 className="w-10 h-10 text-zinc-300 animate-spin mb-3" />
-              <p className="text-sm font-medium text-zinc-100">Векторизация и извлечение данных...</p>
-              <p className="text-xs text-zinc-400 mt-1">
+              <Loader2 className="w-10 h-10 text-zinc-600 dark:text-zinc-300 animate-spin mb-3" />
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Векторизация и извлечение данных...</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 Генерируются эмбеддинги для RAG и распознаются лабораторные биомаркеры
               </p>
             </>
           ) : (
             <>
-              <div className="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-300 mb-3 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-3 shadow-sm">
                 <UploadCloud className="w-6 h-6" />
               </div>
-              <p className="text-sm font-semibold text-zinc-200">
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                 Перетащите файл или нажмите для загрузки
               </p>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 Поддерживаются PDF, TXT, MD. Файл автоматически попадет в векторную базу ChromaDB для ИИ
               </p>
             </>
@@ -195,41 +195,41 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       </div>
 
       {uploadResult && (
-        <div className="p-3 bg-zinc-900 border border-zinc-700 rounded-xl text-xs text-zinc-200 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
+        <div className="p-3 bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-700 rounded-xl text-xs text-emerald-800 dark:text-zinc-200 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-emerald-600 dark:text-zinc-300 shrink-0" />
           <span>{uploadResult}</span>
         </div>
       )}
 
       {/* Documents List */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-zinc-400" />
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
             Документы в текущей папке ({documents.length})
           </h3>
         </div>
 
         {documents.length === 0 ? (
-          <div className="py-12 text-center text-zinc-500 text-xs">
+          <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 text-xs">
             В этой папке пока нет файлов. Загрузите PDF-анализ или статью выше.
           </div>
         ) : (
-          <div className="divide-y divide-zinc-800">
+          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className="p-4 flex items-center justify-between hover:bg-zinc-800/40 transition group"
+                className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition group"
               >
                 <div className="flex items-center space-x-3.5 truncate">
-                  <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-300 shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-center text-zinc-600 dark:text-zinc-300 shrink-0">
                     <FileText className="w-4 h-4" />
                   </div>
                   <div className="truncate">
-                    <p className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition">
+                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate group-hover:text-zinc-950 dark:group-hover:text-white transition">
                       {doc.filename}
                     </p>
-                    <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-2">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-2">
                       <span>{formatFileSize(doc.file_size)}</span>
                       <span>•</span>
                       <span>{new Date(doc.created_at).toLocaleDateString()}</span>
@@ -240,21 +240,21 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                 <div className="flex items-center space-x-2.5 shrink-0">
                   <button
                     onClick={() => setViewingDoc(doc)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-medium border border-zinc-700/80 transition shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white text-xs font-medium border border-zinc-200 dark:border-zinc-700/80 transition shadow-sm"
                     title="Посмотреть содержимое анализа"
                   >
-                    <Eye className="w-3.5 h-3.5 text-zinc-300" />
+                    <Eye className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-300" />
                     <span>Просмотр</span>
                   </button>
 
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-zinc-400" />
                     Векторизован в RAG
                   </span>
 
                   <button
                     onClick={() => handleDeleteDoc(doc.id)}
-                    className="p-2 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition"
+                    className="p-2 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition"
                     title="Удалить файл"
                   >
                     <Trash2 className="w-4 h-4" />

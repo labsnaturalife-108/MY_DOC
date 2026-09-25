@@ -150,7 +150,7 @@ export default function Home() {
   const activeSession = chatSessions.find((s) => s.id === activeSessionId) || null;
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden transition-colors duration-150">
       {/* Left Sidebar */}
       <Sidebar
         patients={patients}
@@ -169,24 +169,24 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-950 relative">
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 relative">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
           </div>
         ) : !activePatient ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 mb-4 shadow-xl">
+            <div className="w-20 h-20 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-4 shadow-xl">
               <Sparkles className="w-10 h-10" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 mb-2">Добро пожаловать в MY_DOC</h2>
-            <p className="text-sm text-zinc-400 max-w-md mb-6">
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Добро пожаловать в MY_DOC</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mb-6">
               Интеллектуальный медицинский ассистент и электронный кабинет здоровья. Для начала
               работы создайте профиль пациента.
             </p>
             <button
               onClick={() => setIsNewPatientModalOpen(true)}
-              className="px-6 py-3 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-2xl flex items-center gap-2 shadow-lg transition"
+              className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-semibold rounded-2xl flex items-center gap-2 shadow-lg transition"
             >
               <UserPlus className="w-5 h-5" />
               Создать карточку пациента
@@ -256,16 +256,16 @@ export default function Home() {
 
       {/* New Patient Modal */}
       {isNewPatientModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-zinc-300" />
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
                 Новая карточка пациента
               </h3>
               <button
                 onClick={() => setIsNewPatientModalOpen(false)}
-                className="text-zinc-400 hover:text-white"
+                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -273,34 +273,34 @@ export default function Home() {
 
             <form onSubmit={handleCreatePatientSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs text-zinc-400 mb-1 block">ФИО пациента</label>
+                <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">ФИО пациента</label>
                 <input
                   type="text"
                   placeholder="Иванов Иван Иванович"
                   value={newPatientData.full_name || ""}
                   onChange={(e) => setNewPatientData({ ...newPatientData, full_name: e.target.value })}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 outline-none"
+                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-400 mb-1 block">Возраст (лет)</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Возраст (лет)</label>
                   <input
                     type="number"
                     placeholder="35"
                     value={newPatientData.age || ""}
                     onChange={(e) => setNewPatientData({ ...newPatientData, age: Number(e.target.value) || undefined })}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-400 mb-1 block">Пол</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Пол</label>
                   <select
                     value={newPatientData.gender || "male"}
                     onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                   >
                     <option value="male">Мужской</option>
                     <option value="female">Женский</option>
@@ -310,30 +310,30 @@ export default function Home() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-zinc-400 mb-1 block">Рост (см)</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Рост (см)</label>
                   <input
                     type="number"
                     placeholder="178"
                     value={newPatientData.height || ""}
                     onChange={(e) => setNewPatientData({ ...newPatientData, height: Number(e.target.value) || undefined })}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-400 mb-1 block">Вес (кг)</label>
+                  <label className="text-xs text-zinc-600 dark:text-zinc-400 mb-1 block">Вес (кг)</label>
                   <input
                     type="number"
                     step="0.1"
                     placeholder="75.5"
                     value={newPatientData.weight || ""}
                     onChange={(e) => setNewPatientData({ ...newPatientData, weight: Number(e.target.value) || undefined })}
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 outline-none"
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-zinc-300 mb-1 block font-medium">
+                <label className="text-xs text-zinc-700 dark:text-zinc-300 mb-1 block font-medium">
                   Аллергии и непереносимости
                 </label>
                 <input
@@ -341,7 +341,7 @@ export default function Home() {
                   placeholder="напр. Пенициллин, цитрусовые, пыльца..."
                   value={newPatientData.allergies || ""}
                   onChange={(e) => setNewPatientData({ ...newPatientData, allergies: e.target.value })}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 outline-none"
+                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-500 outline-none"
                 />
               </div>
 
@@ -349,13 +349,13 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setIsNewPatientModalOpen(false)}
-                  className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-xs hover:bg-zinc-750 transition"
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs transition"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-zinc-100 hover:bg-white text-zinc-950 rounded-xl text-xs font-semibold shadow transition"
+                  className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold shadow transition"
                 >
                   Создать кабинет
                 </button>
