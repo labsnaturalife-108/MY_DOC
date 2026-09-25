@@ -204,20 +204,27 @@ Please respect my dietary pattern strictly.`;
             onClick={() => handleSelectDiet("omnivore")}
             className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
               dietType === "omnivore"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border-zinc-900 dark:border-zinc-100 shadow-md"
+                ? "bg-emerald-900 text-white dark:bg-emerald-950 dark:text-emerald-100 border-emerald-600 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
                 : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Beef className={`w-5 h-5 ${dietType === "omnivore" ? "text-amber-400 dark:text-amber-600" : "text-amber-500"}`} />
+                <Beef className={`w-5 h-5 ${dietType === "omnivore" ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400"}`} />
                 <span className="font-bold text-sm">{t.nutrition.dietTypes.omnivore}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  dietType === "omnivore" 
+                    ? "bg-emerald-800 text-emerald-100" 
+                    : "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
+                }`}>
+                  {t.nutrition.dietTypes.omnivoreBadge}
+                </span>
               </div>
               {dietType === "omnivore" && (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "omnivore" ? "text-zinc-300 dark:text-zinc-700" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "omnivore" ? "text-emerald-200" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.omnivoreDesc}
             </p>
           </button>

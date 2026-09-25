@@ -276,6 +276,7 @@ export const translations = {
       dietTypeTitle: "Тип рациона питания",
       dietTypes: {
         omnivore: "Всеядный",
+        omnivoreBadge: "Сбалансированный",
         omnivoreDesc: "Сбалансированное питание с рыбой, птицей, мясом и растительной пищей",
         vegetarian: "Вегетарианец",
         vegetarianBadge: "Лакто",
@@ -614,6 +615,7 @@ export const translations = {
       dietTypeTitle: "Dietary Pattern",
       dietTypes: {
         omnivore: "Omnivore",
+        omnivoreBadge: "Balanced",
         omnivoreDesc: "Balanced nutrition with fish, poultry, meat, and plant-based foods",
         vegetarian: "Vegetarian",
         vegetarianBadge: "Lacto",
