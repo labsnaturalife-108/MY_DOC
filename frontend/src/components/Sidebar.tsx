@@ -34,6 +34,7 @@ interface SidebarProps {
   activeTab: string;
   onSelectTab: (tab: string) => void;
   isLocalOnline: boolean;
+  onDeletePatient?: (p: Patient) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -49,7 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   activeTab,
   onSelectTab,
-  isLocalOnline
+  isLocalOnline,
+  onDeletePatient
 }) => {
   const { resolvedTheme, toggleTheme } = useTheme();
 
@@ -120,21 +122,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Создать карточку пациента
           </button>
         ) : (
-          <select
-            value={activePatient ? activePatient.id : ""}
-            onChange={(e) => {
-              const id = Number(e.target.value);
-              const p = patients.find((pat) => pat.id === id);
-              if (p) onSelectPatient(p);
-            }}
-            className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition"
-          >
-            {patients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.full_name} {p.age ? `(${p.age} лет)` : ""}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-1.5">
+            <select
+              value={activePatient ? activePatient.id : ""}
+              onChange={(e) => {
+                const id = Number(e.target.value);
+                const p = patients.find((pat) => pat.id === id);
+                if (p) onSelectPatient(p);
+              }}
+              className="flex-1 min-w-0 bg-zinc-50 dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-200 text-sm rounded-xl px-3 py-2 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition"
+            >
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name} {p.age ? `(${p.age} лет)` : ""}
+                </option>
+              ))}
+            </select>
+            {onDeletePatient && activePatient && (
+              <button
+                onClick={() => onDeletePatient(activePatient)}
+                title={`Удалить пациента ${activePatient.full_name}`}
+                className="p-2 rounded-xl bg-zinc-100 hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-950/40 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 border border-zinc-200 dark:border-zinc-700/80 transition shrink-0"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         )}
       </div>
 

@@ -9,7 +9,7 @@ import { ChatView } from "@/components/ChatView";
 import { PreventCalculatorView } from "@/components/PreventCalculatorView";
 import { SettingsModal } from "@/components/SettingsModal";
 import { Patient, ChatSession, api } from "@/lib/api";
-import { UserPlus, X, Sparkles, Loader2 } from "lucide-react";
+import { UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-react";
 
 export default function Home() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -19,6 +19,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<string>("chat"); // chat, profile, folders, labs, prevent
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [isDeletingPatient, setIsDeletingPatient] = useState(false);
   const [isLocalOnline, setIsLocalOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [prefillChatQuery, setPrefillChatQuery] = useState<string>("");
@@ -147,6 +149,32 @@ export default function Home() {
     }
   };
 
+  const handleConfirmDeletePatient = async () => {
+    if (!patientToDelete) return;
+    setIsDeletingPatient(true);
+    try {
+      await api.deletePatient(patientToDelete.id);
+      const remaining = patients.filter((p) => p.id !== patientToDelete.id);
+      setPatients(remaining);
+
+      if (activePatient?.id === patientToDelete.id) {
+        if (remaining.length > 0) {
+          setActivePatient(remaining[0]);
+          await loadSessionsForPatient(remaining[0].id);
+        } else {
+          setActivePatient(null);
+          setChatSessions([]);
+          setActiveSessionId(null);
+        }
+      }
+      setPatientToDelete(null);
+    } catch (err) {
+      alert("Ошибка удаления пациента: " + err);
+    } finally {
+      setIsDeletingPatient(false);
+    }
+  };
+
   const activeSession = chatSessions.find((s) => s.id === activeSessionId) || null;
 
   return (
@@ -166,6 +194,7 @@ export default function Home() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         isLocalOnline={isLocalOnline}
+        onDeletePatient={(p) => setPatientToDelete(p)}
       />
 
       {/* Main Content Area */}
@@ -212,6 +241,7 @@ export default function Home() {
                   setActivePatient(updated);
                   setPatients(patients.map((p) => (p.id === updated.id ? updated : p)));
                 }}
+                onDelete={() => setPatientToDelete(activePatient)}
               />
             )}
 
@@ -361,6 +391,71 @@ export default function Home() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Delete Confirmation Modal */}
+      {patientToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Удаление профиля пациента
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Это действие необратимо
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-2xl space-y-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+              <p>
+                Вы действительно хотите удалить пациента <strong className="text-zinc-900 dark:text-white font-semibold">{patientToDelete.full_name}</strong>?
+              </p>
+              <div className="pt-1 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1">
+                <p className="font-semibold text-rose-700 dark:text-rose-400">Будут безвозвратно удалены:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Все загруженные документы и бланки анализов</li>
+                  <li>Извлеченные биомаркеры и динамика показателей</li>
+                  <li>Векторные эмбеддинги базы знаний ChromaDB</li>
+                  <li>Все сессии диалогов и консультаций с ИИ</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingPatient}
+                onClick={() => setPatientToDelete(null)}
+                className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-medium transition disabled:opacity-50"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingPatient}
+                onClick={handleConfirmDeletePatient}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm transition disabled:opacity-50"
+              >
+                {isDeletingPatient ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Удаление...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Удалить пациента</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

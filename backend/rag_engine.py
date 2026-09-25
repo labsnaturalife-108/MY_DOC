@@ -240,4 +240,12 @@ class RAGEngine:
         except Exception:
             pass
 
+    def delete_patient_collection(self, patient_id: int):
+        """Deletes the entire ChromaDB collection for a patient."""
+        collection_name = self._get_collection_name(patient_id)
+        try:
+            self.client.delete_collection(name=collection_name)
+        except Exception:
+            pass
+
 rag_engine = RAGEngine()

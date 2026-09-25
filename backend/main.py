@@ -122,14 +122,21 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db)):
     if not patient:
         raise HTTPException(status_code=404, detail="Пациент не найден")
     
-    # Also delete vectors
-    docs = db.query(models.Document).filter(models.Document.patient_id == patient_id).all()
-    for d in docs:
-        rag_engine.delete_document(patient_id, d.id)
+    # 1. Delete vectors from ChromaDB
+    rag_engine.delete_patient_collection(patient_id)
 
+    # 2. Delete patient documents folder from filesystem
+    patient_dir = os.path.join(UPLOAD_DIR, f"patient_{patient_id}")
+    if os.path.exists(patient_dir):
+        try:
+            shutil.rmtree(patient_dir)
+        except Exception as e:
+            print(f"Error removing patient dir {patient_dir}: {e}")
+
+    # 3. Delete from DB (cascades to folders, docs, metrics, sessions, messages)
     db.delete(patient)
     db.commit()
-    return {"success": True, "message": "Пациент удален"}
+    return {"success": True, "message": f"Пациент {patient.full_name} успешно удален"}
 
 # --- Folders & Documents ---
 @app.get("/api/patients/{patient_id}/folders", response_model=List[schemas.FolderResponse])

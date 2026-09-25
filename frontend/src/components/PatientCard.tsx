@@ -12,16 +12,18 @@ import {
   Save, 
   X,
   Scale,
-  Ruler
+  Ruler,
+  Trash2
 } from "lucide-react";
 import { Patient, api } from "@/lib/api";
 
 interface PatientCardProps {
   patient: Patient;
   onUpdate: (updated: Patient) => void;
+  onDelete?: (patientId: number) => void;
 }
 
-export const PatientCard: React.FC<PatientCardProps> = ({ patient, onUpdate }) => {
+export const PatientCard: React.FC<PatientCardProps> = ({ patient, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<Patient>>({ ...patient });
   const [saving, setSaving] = useState(false);
@@ -85,13 +87,26 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, onUpdate }) =
             </div>
           </div>
 
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-sm font-medium flex items-center gap-2 border border-zinc-200 dark:border-zinc-700 transition"
-          >
-            {isEditing ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-            {isEditing ? "Отмена" : "Редактировать"}
-          </button>
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <button
+                onClick={() => onDelete(patient.id)}
+                className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-400 rounded-xl text-sm font-medium flex items-center gap-1.5 border border-rose-200 dark:border-rose-900/50 transition shadow-sm"
+                title="Удалить карточку пациента"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Удалить</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-sm font-medium flex items-center gap-2 border border-zinc-200 dark:border-zinc-700 transition"
+            >
+              {isEditing ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+              {isEditing ? "Отмена" : "Редактировать"}
+            </button>
+          </div>
         </div>
 
         {/* Vital stats row */}
