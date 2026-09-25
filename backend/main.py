@@ -408,8 +408,19 @@ async def stream_chat_message(
     session.updated_at = datetime.utcnow()
     db.commit()
 
-    # RAG search
-    rag_sources = rag_engine.search_context(patient_id=patient.id, query=payload.content, n_results=4)
+    # Smart comprehensive RAG search across patient documents
+    patient_docs = db.query(models.Document).filter(
+        models.Document.patient_id == patient.id,
+        models.Document.extracted_text.isnot(None)
+    ).all()
+    folders_dict = {f.id: f.name for f in db.query(models.Folder).filter(models.Folder.patient_id == patient.id).all()}
+    
+    rag_sources = rag_engine.get_patient_context(
+        patient_id=patient.id,
+        query=payload.content,
+        db_documents=patient_docs,
+        folders_map=folders_dict
+    )
 
     # Get conversation history for LLM
     past_messages = db.query(models.ChatMessage).filter(
@@ -453,7 +464,7 @@ async def stream_chat_message(
         sources_meta = [{
             "filename": s["filename"],
             "folder": s["folder_type"],
-            "snippet": s["content"][:150] + "..."
+            "snippet": (s["content"][:250].strip() + "...") if len(s["content"]) > 250 else s["content"].strip()
         } for s in rag_sources]
         yield f"event: sources\ndata: {json.dumps(sources_meta, ensure_ascii=False)}\n\n"
 

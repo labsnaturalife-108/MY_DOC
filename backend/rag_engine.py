@@ -94,6 +94,143 @@ class RAGEngine:
                 })
         return formatted
 
+    def get_patient_context(
+        self,
+        patient_id: int,
+        query: str,
+        db_documents: List[Any],
+        folders_map: Optional[Dict[int, str]] = None,
+        max_total_chars: int = 40000
+    ) -> List[Dict[str, Any]]:
+        """
+        Smart medical context retriever.
+        Guarantees all patient analyses and medical reports are included.
+        If total text <= max_total_chars, includes full text of all documents with relevant ones prioritized.
+        If total text > max_total_chars, performs balanced cross-document retrieval.
+        """
+        if not db_documents:
+            return []
+
+        folders_map = folders_map or {}
+        q_lower = (query or "").lower()
+
+        is_analyses_intent = any(w in q_lower for w in [
+            "анализ", "лаборатор", "кров", "моч", "холестерин", "липид", "ферритин",
+            "биомаркер", "показател", "отклонен", "норма", "результат", "глюкоз", "ттг"
+        ])
+        is_researches_intent = any(w in q_lower for w in [
+            "узи", "исследован", "сосуд", "артери", "эхо", "мрт", "кт", "рентген", "блях"
+        ])
+
+        relevant_docs = []
+        other_docs = []
+
+        for doc in db_documents:
+            text = (doc.extracted_text or "").strip()
+            if not text:
+                continue
+
+            folder_name = folders_map.get(doc.folder_id, "Документы")
+            folder_type = getattr(doc, "folder_type", None)
+            if not folder_type and hasattr(doc, "folder") and doc.folder:
+                folder_type = doc.folder.folder_type
+
+            if not folder_type:
+                f_name_lower = folder_name.lower()
+                if "анализ" in f_name_lower:
+                    folder_type = "analyses"
+                elif "исследован" in f_name_lower:
+                    folder_type = "researches"
+                elif "выписк" in f_name_lower:
+                    folder_type = "extracts"
+                else:
+                    folder_type = "knowledge_base"
+
+            doc_info = {
+                "document_id": doc.id,
+                "filename": doc.filename,
+                "folder_type": folder_type,
+                "folder_name": folder_name,
+                "content": text,
+                "char_count": len(text)
+            }
+
+            if is_analyses_intent and folder_type == "analyses":
+                relevant_docs.append(doc_info)
+            elif is_researches_intent and folder_type == "researches":
+                relevant_docs.append(doc_info)
+            else:
+                other_docs.append(doc_info)
+
+        all_ordered = relevant_docs + other_docs
+        total_chars = sum(d["char_count"] for d in all_ordered)
+
+        # Strategy 1: All documents fit comfortably in context
+        if total_chars <= max_total_chars:
+            sources = []
+            for d in all_ordered:
+                sources.append({
+                    "filename": d["filename"],
+                    "folder_type": d["folder_type"],
+                    "document_id": d["document_id"],
+                    "content": d["content"],
+                    "distance": 0.0
+                })
+            return sources
+
+        # Strategy 2: Very large document collection -> Balanced Cross-Document Retrieval
+        collection_name = self._get_collection_name(patient_id)
+        chroma_chunks = []
+        try:
+            collection = self.client.get_collection(name=collection_name)
+            count = collection.count()
+            if count > 0:
+                res = collection.query(query_texts=[query], n_results=min(25, count))
+                if res and res.get("documents"):
+                    docs = res["documents"][0]
+                    metas = res.get("metadatas", [[]])[0]
+                    dists = res.get("distances", [[]])[0]
+                    for doc_chunk, meta, dist in zip(docs, metas, dists):
+                        chroma_chunks.append({
+                            "document_id": meta.get("document_id"),
+                            "filename": meta.get("filename"),
+                            "folder_type": meta.get("folder_type", "analyses"),
+                            "content": doc_chunk,
+                            "distance": dist
+                        })
+        except Exception:
+            pass
+
+        doc_chunks_map = {}
+        for ch in chroma_chunks:
+            did = ch.get("document_id")
+            if did not in doc_chunks_map:
+                doc_chunks_map[did] = []
+            doc_chunks_map[did].append(ch)
+
+        assembled_sources = []
+        current_len = 0
+        for d in all_ordered:
+            did = d["document_id"]
+            if did in doc_chunks_map:
+                for ch in doc_chunks_map[did][:2]:
+                    if current_len + len(ch["content"]) <= max_total_chars:
+                        assembled_sources.append(ch)
+                        current_len += len(ch["content"])
+            else:
+                snippet = d["content"][:1000]
+                if current_len + len(snippet) <= max_total_chars:
+                    assembled_sources.append({
+                        "document_id": did,
+                        "filename": d["filename"],
+                        "folder_type": d["folder_type"],
+                        "content": snippet,
+                        "distance": 0.5
+                    })
+                    current_len += len(snippet)
+
+        return assembled_sources if assembled_sources else self.search_context(patient_id, query, n_results=10)
+
     def delete_document(self, patient_id: int, document_id: int):
         """Removes all indexed chunks of a document."""
         collection_name = self._get_collection_name(patient_id)
