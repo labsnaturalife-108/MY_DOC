@@ -17,6 +17,7 @@ import {
   FolderOpen
 } from "lucide-react";
 import { Patient, ChatSession, ChatMessage, AIModel, api } from "@/lib/api";
+import { MedicalMarkdown } from "./MedicalMarkdown";
 
 interface ChatViewProps {
   patient: Patient;
@@ -367,11 +368,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <div
                   className={`max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed shadow-lg ${
                     isUser
-                      ? "bg-zinc-800 border border-zinc-750 text-zinc-100 rounded-tr-none font-medium"
-                      : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none whitespace-pre-wrap"
+                      ? "bg-zinc-800 border border-zinc-750 text-zinc-100 rounded-tr-none font-medium whitespace-pre-wrap"
+                      : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none"
                   }`}
                 >
-                  {m.content}
+                  {isUser ? (
+                    m.content
+                  ) : (
+                    <MedicalMarkdown content={m.content} />
+                  )}
 
                   {/* Clean, compact Sources Trigger Button (does not clutter chat!) */}
                   {!isUser && parsedSources && parsedSources.length > 0 && (
@@ -398,9 +403,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <Bot className="w-4 h-4" />
               </div>
 
-              <div className="max-w-[85%] bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-2xl rounded-tl-none p-4 text-xs sm:text-sm leading-relaxed shadow-lg whitespace-pre-wrap">
+              <div className="max-w-[85%] bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-2xl rounded-tl-none p-4 text-xs sm:text-sm leading-relaxed shadow-lg">
                 {streamingText ? (
-                  streamingText
+                  <MedicalMarkdown content={streamingText} />
                 ) : (
                   <div className="flex items-center gap-2 text-zinc-400 text-xs">
                     <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
