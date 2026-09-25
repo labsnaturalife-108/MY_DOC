@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -272,6 +272,75 @@ def delete_document(patient_id: int, doc_id: int, db: Session = Depends(get_db))
     db.delete(doc)
     db.commit()
     return {"success": True, "message": "Документ удален"}
+
+@app.get("/api/patients/{patient_id}/documents/{doc_id}")
+def get_document_details(patient_id: int, doc_id: int, db: Session = Depends(get_db)):
+    doc = db.query(models.Document).filter(
+        models.Document.id == doc_id,
+        models.Document.patient_id == patient_id
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+
+    metrics = db.query(models.LabMetric).filter(
+        models.LabMetric.document_id == doc_id,
+        models.LabMetric.patient_id == patient_id
+    ).order_by(models.LabMetric.metric_name.asc()).all()
+
+    return {
+        "id": doc.id,
+        "patient_id": doc.patient_id,
+        "folder_id": doc.folder_id,
+        "filename": doc.filename,
+        "file_size": doc.file_size,
+        "file_type": doc.file_type,
+        "is_indexed": doc.is_indexed,
+        "extracted_text": doc.extracted_text or "",
+        "created_at": doc.created_at,
+        "metrics": [
+            {
+                "id": m.id,
+                "metric_name": m.metric_name,
+                "value": m.value,
+                "unit": m.unit,
+                "reference_min": m.reference_min,
+                "reference_max": m.reference_max,
+                "status": m.status,
+                "record_date": m.record_date,
+                "notes": m.notes
+            }
+            for m in metrics
+        ]
+    }
+
+@app.get("/api/patients/{patient_id}/documents/{doc_id}/file")
+def get_document_file(patient_id: int, doc_id: int, db: Session = Depends(get_db)):
+    doc = db.query(models.Document).filter(
+        models.Document.id == doc_id,
+        models.Document.patient_id == patient_id
+    ).first()
+    if not doc or not doc.filepath or not os.path.exists(doc.filepath):
+        raise HTTPException(status_code=404, detail="Файл не найден на сервере")
+
+    ext = (doc.file_type or "").lower().strip(".")
+    media_types = {
+        "pdf": "application/pdf",
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "webp": "image/webp",
+        "txt": "text/plain; charset=utf-8",
+        "csv": "text/csv; charset=utf-8",
+        "md": "text/markdown; charset=utf-8"
+    }
+    media_type = media_types.get(ext, "application/octet-stream")
+
+    return FileResponse(
+        path=doc.filepath,
+        filename=doc.filename,
+        media_type=media_type,
+        content_disposition_type="inline"
+    )
 
 # --- Lab Metrics / Dynamic Charts ---
 @app.get("/api/patients/{patient_id}/labs", response_model=List[schemas.LabMetricResponse])

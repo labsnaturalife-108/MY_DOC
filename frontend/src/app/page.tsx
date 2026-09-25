@@ -219,6 +219,12 @@ export default function Home() {
               <DocumentFolders
                 patient={activePatient}
                 onRefreshLabs={() => {}}
+                onNavigateToChat={(query) => {
+                  if (query) {
+                    setPrefillChatQuery(query);
+                  }
+                  setActiveTab("chat");
+                }}
               />
             )}
 

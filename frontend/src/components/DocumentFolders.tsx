@@ -12,22 +12,26 @@ import {
   TestTube2, 
   ClipboardList,
   Sparkles,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
 import { Patient, Folder, DocumentItem, api } from "@/lib/api";
+import { DocumentViewerModal } from "./DocumentViewerModal";
 
 interface DocumentFoldersProps {
   patient: Patient;
   onRefreshLabs?: () => void;
+  onNavigateToChat?: (prefillQuery?: string) => void;
 }
 
-export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRefreshLabs }) => {
+export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRefreshLabs, onNavigateToChat }) => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
 
   const loadFoldersAndDocs = async () => {
     try {
@@ -233,7 +237,16 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 shrink-0">
+                <div className="flex items-center space-x-2.5 shrink-0">
+                  <button
+                    onClick={() => setViewingDoc(doc)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-medium border border-zinc-700/80 transition shadow-sm"
+                    title="Посмотреть содержимое анализа"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-zinc-300" />
+                    <span>Просмотр</span>
+                  </button>
+
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
                     <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
                     Векторизован в RAG
@@ -252,6 +265,15 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
           </div>
         )}
       </div>
+
+      {/* Document Content & File Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={Boolean(viewingDoc)}
+        onClose={() => setViewingDoc(null)}
+        patientId={patient.id}
+        document={viewingDoc}
+        onNavigateToChat={onNavigateToChat}
+      />
     </div>
   );
 };

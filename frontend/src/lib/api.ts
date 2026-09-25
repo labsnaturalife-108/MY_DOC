@@ -38,6 +38,11 @@ export interface DocumentItem {
   created_at: string;
 }
 
+export interface DocumentDetail extends DocumentItem {
+  extracted_text: string;
+  metrics: LabMetric[];
+}
+
 export interface LabMetric {
   id: number;
   patient_id: number;
@@ -185,6 +190,16 @@ export const api = {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete document");
+  },
+
+  async getDocumentDetails(patientId: number, docId: number): Promise<DocumentDetail> {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/documents/${docId}`);
+    if (!res.ok) throw new Error("Failed to fetch document details");
+    return res.json();
+  },
+
+  getDocumentFileUrl(patientId: number, docId: number): string {
+    return `${API_BASE}/patients/${patientId}/documents/${docId}/file`;
   },
 
   // Lab Metrics

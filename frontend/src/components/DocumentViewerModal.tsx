@@ -1,0 +1,410 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { 
+  X, 
+  FileText, 
+  Copy, 
+  Check, 
+  ExternalLink, 
+  Activity, 
+  Sparkles, 
+  Loader2, 
+  Download,
+  AlertCircle,
+  Eye,
+  CheckCircle2,
+  Calendar,
+  Layers
+} from "lucide-react";
+import { DocumentItem, DocumentDetail, api } from "@/lib/api";
+
+interface DocumentViewerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  patientId: number;
+  document: DocumentItem | null;
+  onNavigateToChat?: (prefillQuery?: string) => void;
+}
+
+export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
+  isOpen,
+  onClose,
+  patientId,
+  document: docItem,
+  onNavigateToChat
+}) => {
+  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<DocumentDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"text" | "metrics" | "file">("text");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && docItem) {
+      loadDetails(docItem.id);
+    } else {
+      setDetail(null);
+      setError(null);
+      setActiveTab("text");
+    }
+  }, [isOpen, docItem?.id]);
+
+  const loadDetails = async (docId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getDocumentDetails(patientId, docId);
+      setDetail(data);
+      // If no text, but is image/pdf, we can default to file tab if preferred
+      if (!data.extracted_text && (data.file_type === "pdf" || ["png", "jpg", "jpeg", "webp"].includes(data.file_type))) {
+        setActiveTab("file");
+      } else {
+        setActiveTab("text");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Не удалось загрузить содержимое документа");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen || !docItem) return null;
+
+  const fileUrl = api.getDocumentFileUrl(patientId, docItem.id);
+  const ext = (docItem.file_type || "").toLowerCase().replace(".", "");
+  const isImage = ["png", "jpg", "jpeg", "webp"].includes(ext);
+  const isPdf = ext === "pdf";
+
+  const handleCopyText = () => {
+    if (!detail?.extracted_text) return;
+    navigator.clipboard.writeText(detail.extracted_text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAskDoctor = () => {
+    if (!onNavigateToChat) return;
+    const query = `Пожалуйста, сделай подробный профессиональный врачебный разбор документа "${docItem.filename}". Объясни все найденные показатели, отклонения от нормы и клиническое значение для моего состояния.`;
+    onClose();
+    onNavigateToChat(query);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " Б";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " КБ";
+    return (bytes / (1024 * 1024)).toFixed(1) + " МБ";
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/90 gap-4">
+          <div className="flex items-center space-x-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-200 shrink-0 shadow-sm">
+              <FileText className="w-5 h-5 text-zinc-300" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-zinc-100 truncate" title={docItem.filename}>
+                  {docItem.filename}
+                </h3>
+                <span className="text-[10px] font-mono uppercase bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-0.5 rounded-full shrink-0">
+                  {ext || "file"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
+                <span>{formatFileSize(docItem.file_size)}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-zinc-500" />
+                  {new Date(docItem.created_at).toLocaleDateString()}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Проиндексирован в RAG
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Открыть оригинал в новой вкладке"
+              className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/80 transition"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="px-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/40">
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => setActiveTab("text")}
+              className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-1.5 ${
+                activeTab === "text"
+                  ? "border-zinc-200 text-zinc-100"
+                  : "border-transparent text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Распознанный текст (OCR / RAG)
+            </button>
+
+            <button
+              onClick={() => setActiveTab("metrics")}
+              className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-1.5 ${
+                activeTab === "metrics"
+                  ? "border-zinc-200 text-zinc-100"
+                  : "border-transparent text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Биомаркеры
+              {detail?.metrics && detail.metrics.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-300 font-mono">
+                  {detail.metrics.length}
+                </span>
+              )}
+            </button>
+
+            {(isPdf || isImage) && (
+              <button
+                onClick={() => setActiveTab("file")}
+                className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-1.5 ${
+                  activeTab === "file"
+                    ? "border-zinc-200 text-zinc-100"
+                    : "border-transparent text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                Оригинал бланка
+              </button>
+            )}
+          </div>
+
+          {activeTab === "text" && detail?.extracted_text && (
+            <button
+              onClick={handleCopyText}
+              className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-zinc-800 transition"
+              title="Скопировать распознанный текст"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400 font-medium">Скопировано</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Копировать</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Content Body */}
+        <div className="flex-1 overflow-y-auto p-5 bg-zinc-950/20">
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+              <p className="text-xs text-zinc-400">Загрузка содержимого анализа...</p>
+            </div>
+          ) : error ? (
+            <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-800/50 text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : (
+            <>
+              {/* TAB 1: EXTRACTED TEXT */}
+              {activeTab === "text" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800/80">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+                      Этот текст извлечён модулем OCR и проиндексирован в базе знаний (ChromaDB) для ИИ.
+                    </span>
+                    <span className="font-mono text-zinc-500">
+                      {detail?.extracted_text?.length || 0} симв.
+                    </span>
+                  </div>
+
+                  {detail?.extracted_text ? (
+                    <div className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 overflow-x-auto text-xs text-zinc-200 font-mono leading-relaxed whitespace-pre-wrap selection:bg-zinc-800 selection:text-white">
+                      {detail.extracted_text}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-zinc-500 text-xs">
+                      Текстовое содержимое не было распознано или файл пуст.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: EXTRACTED BIOMARKERS */}
+              {activeTab === "metrics" && (
+                <div className="space-y-4">
+                  {detail?.metrics && detail.metrics.length > 0 ? (
+                    <div className="border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900/80">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-zinc-950/80 text-zinc-400 font-semibold border-b border-zinc-800 uppercase tracking-wider text-[10px]">
+                          <tr>
+                            <th className="py-2.5 px-4">Показатель</th>
+                            <th className="py-2.5 px-4">Значение</th>
+                            <th className="py-2.5 px-4">Единицы</th>
+                            <th className="py-2.5 px-4">Норма (референс)</th>
+                            <th className="py-2.5 px-4">Статус</th>
+                            <th className="py-2.5 px-4">Дата</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-800/80 font-mono">
+                          {detail.metrics.map((m) => {
+                            const isHigh = m.status === "high" || m.status?.includes("выш") || m.status?.includes("high");
+                            const isLow = m.status === "low" || m.status?.includes("низ") || m.status?.includes("low");
+                            const isNormal = !isHigh && !isLow;
+
+                            return (
+                              <tr key={m.id} className="hover:bg-zinc-800/40 transition">
+                                <td className="py-2.5 px-4 font-sans font-medium text-zinc-200">
+                                  {m.metric_name}
+                                </td>
+                                <td className="py-2.5 px-4 font-bold text-zinc-100">
+                                  {m.value}
+                                </td>
+                                <td className="py-2.5 px-4 text-zinc-400">
+                                  {m.unit || "—"}
+                                </td>
+                                <td className="py-2.5 px-4 text-zinc-400">
+                                  {m.reference_min !== null && m.reference_max !== null
+                                    ? `${m.reference_min} – ${m.reference_max}`
+                                    : m.reference_min !== null
+                                    ? `≥ ${m.reference_min}`
+                                    : m.reference_max !== null
+                                    ? `≤ ${m.reference_max}`
+                                    : "—"}
+                                </td>
+                                <td className="py-2.5 px-4">
+                                  {isHigh && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                      ПОВЫШЕН
+                                    </span>
+                                  )}
+                                  {isLow && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                      СНИЖЕН
+                                    </span>
+                                  )}
+                                  {isNormal && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                      В НОРМЕ
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-4 text-zinc-500 text-[11px]">
+                                  {m.record_date}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-zinc-400 text-xs space-y-1">
+                      <p className="font-semibold text-zinc-300">Лабораторные нормы не выделены автоматически</p>
+                      <p className="text-zinc-500">
+                        Возможно, это инструментальное исследование (УЗИ, ЭКГ) или консультативное заключение. Полный текст доступен на вкладке «Распознанный текст».
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: ORIGINAL FILE */}
+              {activeTab === "file" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-zinc-400 pb-1">
+                    <span>Оригинал загруженного документа</span>
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-zinc-300 hover:text-white flex items-center gap-1 transition"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Скачать файл
+                    </a>
+                  </div>
+
+                  {isImage && (
+                    <div className="bg-zinc-950 p-2 rounded-2xl border border-zinc-800 flex items-center justify-center">
+                      <img
+                        src={fileUrl}
+                        alt={docItem.filename}
+                        className="max-h-[520px] w-auto object-contain rounded-xl"
+                      />
+                    </div>
+                  )}
+
+                  {isPdf && (
+                    <div className="bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden">
+                      <iframe
+                        src={fileUrl}
+                        title={docItem.filename}
+                        className="w-full h-[520px] border-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-4 border-t border-zinc-800/80 bg-zinc-900/90 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-zinc-400 text-center sm:text-left">
+            Данные используются ИИ-ассистентом для генерации персональных заключений.
+          </p>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            {onNavigateToChat && (
+              <button
+                onClick={handleAskDoctor}
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-md"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Спросить у ИИ об этом анализе
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-medium rounded-xl text-xs transition"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
