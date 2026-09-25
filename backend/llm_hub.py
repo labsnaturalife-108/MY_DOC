@@ -1,5 +1,6 @@
 import json
 import httpx
+import asyncio
 from typing import AsyncGenerator, List, Dict, Any, Optional
 
 DEFAULT_LMSTUDIO_URL = "http://localhost:1234/v1"
@@ -9,8 +10,8 @@ STATIC_CLOUD_MODELS = [
     {"id": "gpt-4o", "name": "OpenAI: GPT-4o", "provider": "openai", "is_local": False},
     {"id": "gpt-4o-mini", "name": "OpenAI: GPT-4o Mini", "provider": "openai", "is_local": False},
     {"id": "claude-3-5-sonnet", "name": "Anthropic: Claude 3.5 Sonnet", "provider": "anthropic", "is_local": False},
-    {"id": "gemini-1.5-pro", "name": "Google: Gemini 1.5 Pro", "provider": "gemini", "is_local": False},
-    {"id": "gemini-2.0-flash", "name": "Google: Gemini 2.0 Flash", "provider": "gemini", "is_local": False},
+    {"id": "gemini-3.8-flash", "name": "Google: Gemini 3.8 Flash (Рекомендуется)", "provider": "gemini", "is_local": False},
+    {"id": "gemini-flash-latest", "name": "Google: Gemini Flash Latest", "provider": "gemini", "is_local": False},
     {"id": "deepseek-chat", "name": "DeepSeek: V3", "provider": "deepseek", "is_local": False},
     {"id": "deepseek-reasoner", "name": "DeepSeek: R1 (Reasoning)", "provider": "deepseek", "is_local": False},
     {"id": "grok-2", "name": "xAI: Grok 2", "provider": "grok", "is_local": False},
@@ -207,42 +208,65 @@ class LLMHub:
                 yield f"⚠️ Для использования модели '{model_id}' требуется API-ключ {provider.upper()}.\nПожалуйста, укажите его в настройках (кнопка '⚙️ Настройки' вверху).\n\nТакже вы можете запустить локальный LM Studio."
                 return
 
+            # Auto-map deprecated Gemini model IDs
+            active_model = model_id
+            if provider == "gemini":
+                if active_model in ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.5-flash"]:
+                    active_model = "gemini-3.8-flash"
+
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             }
             payload = {
-                "model": model_id,
+                "model": active_model,
                 "messages": full_messages,
                 "stream": True,
                 "temperature": 0.3
             }
 
-            try:
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    async with client.stream("POST", endpoint, headers=headers, json=payload) as response:
-                        if response.status_code != 200:
-                            err_body = await response.aread()
-                            yield f"⚠️ Ошибка API {provider.upper()} ({response.status_code}): {err_body.decode('utf-8', errors='ignore')}"
-                            return
-                        async for line in response.aiter_lines():
-                            if line.startswith("data: "):
-                                data_str = line[6:].strip()
-                                if data_str == "[DONE]":
-                                    break
-                                try:
-                                    chunk = json.loads(data_str)
-                                    choice = chunk.get("choices", [{}])[0]
-                                    delta_obj = choice.get("delta", {})
-                                    delta = delta_obj.get("content") or delta_obj.get("reasoning_content") or ""
-                                    if delta:
-                                        yield delta
-                                except Exception:
-                                    continue
-                return
-            except Exception as e:
-                yield f"⚠️ Ошибка связи с API {provider.upper()}: {str(e)}"
-                return
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        async with client.stream("POST", endpoint, headers=headers, json=payload) as response:
+                            if response.status_code in [503, 429] and attempt < max_retries - 1:
+                                await asyncio.sleep(1.5 * (attempt + 1))
+                                continue
+
+                            if response.status_code != 200:
+                                err_body = (await response.aread()).decode('utf-8', errors='ignore')
+                                if response.status_code == 503:
+                                    yield f"⚠️ Сервер {provider.upper()} временно перегружен (503 High Demand). Попробуйте повторить запрос еще раз через несколько секунд."
+                                elif response.status_code == 429:
+                                    yield f"⚠️ Превышен лимит запросов {provider.upper()} (429 Rate Limit). Пожалуйста, подождите немного перед следующим вопросом."
+                                elif response.status_code == 404:
+                                    yield f"⚠️ Модель '{active_model}' не найдена или устарела (404). Рекомендуется использовать 'gemini-3.8-flash'."
+                                else:
+                                    yield f"⚠️ Ошибка API {provider.upper()} ({response.status_code}): {err_body}"
+                                return
+
+                            async for line in response.aiter_lines():
+                                if line.startswith("data: "):
+                                    data_str = line[6:].strip()
+                                    if data_str == "[DONE]":
+                                        break
+                                    try:
+                                        chunk = json.loads(data_str)
+                                        choice = chunk.get("choices", [{}])[0]
+                                        delta_obj = choice.get("delta", {})
+                                        delta = delta_obj.get("content") or delta_obj.get("reasoning_content") or ""
+                                        if delta:
+                                            yield delta
+                                    except Exception:
+                                        continue
+                    return
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(1.5 * (attempt + 1))
+                        continue
+                    yield f"⚠️ Ошибка связи с API {provider.upper()}: {str(e)}"
+                    return
 
         # Fallback / Built-in Demo Medical Assistant (only when truly offline)
         last_user_msg = messages[-1]["content"] if messages else ""
@@ -259,7 +283,6 @@ class LLMHub:
             f"💡 *Для полноценных клинических ответов выберите в выпадающем списке сверху вашу локальную модель из LM Studio (или настройте API-ключ в настройках).* "
         )
         
-        import asyncio
         words = demo_reply.split(" ")
         for i in range(0, len(words), 3):
             yield " ".join(words[i:i+3]) + " "

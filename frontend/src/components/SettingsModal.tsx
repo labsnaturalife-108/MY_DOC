@@ -182,7 +182,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-400 mb-1 block">Google Gemini API Key (Gemini 2.0 / 1.5)</label>
+                <label className="text-[11px] text-zinc-400 mb-1 block">Google Gemini API Key (Gemini 3.8 / Flash)</label>
                 <input
                   type="password"
                   value={keys.api_key_gemini}
