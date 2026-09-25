@@ -6,6 +6,7 @@ import { PatientCard } from "@/components/PatientCard";
 import { DocumentFolders } from "@/components/DocumentFolders";
 import { LabCharts } from "@/components/LabCharts";
 import { ChatView } from "@/components/ChatView";
+import { PreventCalculatorView } from "@/components/PreventCalculatorView";
 import { SettingsModal } from "@/components/SettingsModal";
 import { Patient, ChatSession, api } from "@/lib/api";
 import { UserPlus, X, Sparkles, Loader2 } from "lucide-react";
@@ -15,11 +16,12 @@ export default function Home() {
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("chat"); // chat, profile, folders, labs
+  const [activeTab, setActiveTab] = useState<string>("chat"); // chat, profile, folders, labs, prevent
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [isLocalOnline, setIsLocalOnline] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [prefillChatQuery, setPrefillChatQuery] = useState<string>("");
 
   // New patient modal state
   const [newPatientData, setNewPatientData] = useState<Partial<Patient>>({
@@ -198,6 +200,8 @@ export default function Home() {
                 session={activeSession}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 isLocalOnline={isLocalOnline}
+                prefillQuery={prefillChatQuery}
+                onClearPrefill={() => setPrefillChatQuery("")}
               />
             )}
 
@@ -220,6 +224,18 @@ export default function Home() {
 
             {activeTab === "labs" && (
               <LabCharts patient={activePatient} />
+            )}
+
+            {activeTab === "prevent" && (
+              <PreventCalculatorView
+                patient={activePatient}
+                onNavigateToChat={(query) => {
+                  if (query) {
+                    setPrefillChatQuery(query);
+                  }
+                  setActiveTab("chat");
+                }}
+              />
             )}
           </div>
         )}

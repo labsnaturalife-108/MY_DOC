@@ -12,7 +12,8 @@ import {
   Bot,
   FolderOpen,
   LineChart,
-  Stethoscope
+  Stethoscope,
+  HeartPulse
 } from "lucide-react";
 import { Patient, ChatSession } from "@/lib/api";
 
@@ -166,6 +167,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <LineChart className="w-3.5 h-3.5 text-zinc-300" />
             Динамика
+          </button>
+
+          <button
+            onClick={() => onSelectTab("prevent")}
+            className={`col-span-2 flex items-center justify-between px-3 py-2 rounded-lg font-medium transition ${
+              activeTab === "prevent"
+                ? "bg-rose-950/40 text-rose-200 border border-rose-800/70 shadow-sm"
+                : "text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/50 border border-zinc-800/70"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <HeartPulse className="w-3.5 h-3.5 text-rose-400" />
+              <span>Риск PREVENT™</span>
+            </div>
+            <span className="text-[10px] font-mono uppercase bg-rose-900/40 text-rose-300 px-1.5 py-0.5 rounded border border-rose-800/50">
+              AHA 10-лет
+            </span>
           </button>
         </div>
       )}

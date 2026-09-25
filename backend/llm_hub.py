@@ -126,6 +126,35 @@ class LLMHub:
             "6. Всегда учитывайте аллергии, возраст и текущую терапию пациента.",
         ]
 
+        prevent = patient_profile.get("prevent_risk")
+        if prevent and isinstance(prevent, dict):
+            inp = prevent.get("inputs_used", {})
+            prompt_parts.extend([
+                "",
+                "=== ОФИЦИАЛЬНЫЙ РАСЧЕТ РИСКА AHA PREVENT™ (2023–2024) ===",
+                f"- 10-летний суммарный сердечно-сосудистый риск (Total CVD): **{prevent.get('cvd_10yr', '—')}%**",
+                f"- 10-летний риск атеросклеротических осложнений (ASCVD: инфаркт, инсульт): **{prevent.get('ascvd_10yr', '—')}%**",
+                f"- 10-летний риск сердечной недостаточности (Heart Failure): **{prevent.get('heart_failure_10yr', '—')}%**",
+            ])
+            if prevent.get("cvd_30yr"):
+                prompt_parts.append(f"- 30-летний суммарный риск ССЗ: **{prevent.get('cvd_30yr')}%**")
+            if prevent.get("ascvd_30yr"):
+                prompt_parts.append(f"- 30-летний риск атеросклеротических осложнений (ASCVD): **{prevent.get('ascvd_30yr')}%**")
+            
+            prompt_parts.extend([
+                f"- Категория риска по AHA/ACC: **{prevent.get('risk_category', '—')}** ({prevent.get('risk_badge', '')})",
+                f"- Исходные клинические параметры для расчета: Возраст {inp.get('age')}, Пол {inp.get('sex')}, Общий холестерин {inp.get('total_cholesterol_mmol')} ммоль/л ({inp.get('total_cholesterol_mg')} мг/дл), ЛПВП {inp.get('hdl_cholesterol_mmol')} ммоль/л, Систолическое АД {inp.get('systolic_bp')} мм рт. ст., ИМТ {inp.get('bmi')}, СКФ (eGFR) {inp.get('egfr')} мл/мин/1.73м², Диабет: {'Да' if inp.get('has_diabetes') else 'Нет'}, Курение: {'Да' if inp.get('current_smoker') else 'Нет'}, Гипотензивные препараты: {'Да' if inp.get('on_htn_meds') else 'Нет'}, Статины: {'Да' if inp.get('on_cholesterol_meds') else 'Нет'}.",
+            ])
+            
+            modifiers = prevent.get("risk_modifiers", [])
+            if modifiers:
+                prompt_parts.append(f"- ФАКТОРЫ УСИЛЕНИЯ РИСКА (Risk Enhancers): {'; '.join(modifiers)}")
+
+            prompt_parts.extend([
+                "КРИТИЧЕСКИ ВАЖНО: Если пользователь или врач спрашивает о сердечно-сосудистом риске (например, 'рассчитай 10-летний риск по PREVENT', 'каков мой риск инфаркта/инсульта', 'оцени прогноз по сердцу'), вы ОБЯЗАНЫ привести именно эти точные валидированные цифры AHA PREVENT™! Объясните значение процентов (Total CVD, ASCVD, Heart Failure), категорию риска, влияние обнаруженных факторов (бляшки сонных артерий, Lp(a) и др.) и дайте рекомендации по гиполипидемической терапии согласно гайдлайнам AHA/ACC.",
+                ""
+            ])
+
         if context_sources:
             prompt_parts.append("\n=== ДАННЫЕ ИЗ БАЗЫ ЗНАНИЙ И ДОКУМЕНТОВ ПАЦИЕНТА (RAG) ===")
             for idx, source in enumerate(context_sources, start=1):

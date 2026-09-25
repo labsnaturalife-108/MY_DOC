@@ -138,3 +138,21 @@ class SettingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- PREVENT Calculator Schemas ---
+class PreventCalculateRequest(BaseModel):
+    sex: str = "male"
+    age: float = 50.0
+    total_cholesterol_mmol: Optional[float] = None
+    total_cholesterol_mg: Optional[float] = None
+    hdl_cholesterol_mmol: Optional[float] = None
+    hdl_cholesterol_mg: Optional[float] = None
+    systolic_bp: float = 120.0
+    has_diabetes: bool = False
+    current_smoker: bool = False
+    bmi: float = 25.0
+    egfr: Optional[float] = None
+    creatinine_umol: Optional[float] = None
+    on_htn_meds: bool = False
+    on_cholesterol_meds: bool = False
+    risk_modifiers: Optional[List[str]] = []

@@ -79,6 +79,45 @@ export interface AIModel {
   is_local: boolean;
 }
 
+export interface PreventInputs {
+  sex: string;
+  age: number;
+  total_cholesterol_mmol: number;
+  total_cholesterol_mg: number;
+  hdl_cholesterol_mmol: number;
+  hdl_cholesterol_mg: number;
+  systolic_bp: number;
+  has_diabetes: boolean;
+  current_smoker: boolean;
+  bmi: number;
+  egfr: number;
+  creatinine_umol: number;
+  on_htn_meds: boolean;
+  on_cholesterol_meds: boolean;
+  risk_modifiers?: string[];
+  sources_detected?: Record<string, string>;
+}
+
+export interface PreventRiskResult {
+  cvd_10yr: number;
+  ascvd_10yr: number;
+  heart_failure_10yr: number;
+  cvd_30yr?: number | null;
+  ascvd_30yr?: number | null;
+  risk_category: string;
+  risk_color: "emerald" | "amber" | "orange" | "rose" | string;
+  risk_badge: string;
+  risk_modifiers?: string[];
+  recommendations: string[];
+  inputs_used?: Record<string, any>;
+}
+
+export interface PreventParamsResponse {
+  inputs: PreventInputs;
+  risk: PreventRiskResult;
+  patient_name: string;
+}
+
 export const api = {
   // Patients
   async getPatients(): Promise<Patient[]> {
@@ -239,5 +278,22 @@ export const api = {
       body: JSON.stringify({ key, value }),
     });
     if (!res.ok) throw new Error("Failed to save setting");
+  },
+
+  // PREVENT Calculator
+  async getPreventParams(patientId: number): Promise<PreventParamsResponse> {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/prevent-params`);
+    if (!res.ok) throw new Error("Failed to fetch PREVENT parameters");
+    return res.json();
+  },
+
+  async calculatePreventRisk(patientId: number, params: Partial<PreventInputs>): Promise<PreventRiskResult> {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/prevent-calculate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error("Failed to calculate PREVENT risk");
+    return res.json();
   }
 };

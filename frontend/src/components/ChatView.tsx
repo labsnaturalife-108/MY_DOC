@@ -25,6 +25,8 @@ interface ChatViewProps {
   onUpdateSessionTitle?: (title: string) => void;
   onOpenSettings: () => void;
   isLocalOnline: boolean;
+  prefillQuery?: string;
+  onClearPrefill?: () => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -32,6 +34,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   session,
   onOpenSettings,
   isLocalOnline,
+  prefillQuery,
+  onClearPrefill,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -61,6 +65,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingText]);
+
+  useEffect(() => {
+    if (prefillQuery) {
+      setInput(prefillQuery);
+      onClearPrefill?.();
+    }
+  }, [prefillQuery]);
 
   const loadModels = async () => {
     try {

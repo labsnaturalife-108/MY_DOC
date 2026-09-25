@@ -14,6 +14,7 @@ from . import models, schemas
 from .parser import extract_text_from_file, parse_lab_metrics
 from .rag_engine import rag_engine
 from .llm_hub import llm_hub
+from .prevent_calculator import extract_prevent_inputs, calculate_prevent_risk
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -316,6 +317,41 @@ def delete_lab_metric(patient_id: int, metric_id: int, db: Session = Depends(get
     db.commit()
     return {"success": True}
 
+# --- PREVENT 10-Year CVD Risk Calculator ---
+@app.get("/api/patients/{patient_id}/prevent-params")
+def get_patient_prevent_params(patient_id: int, db: Session = Depends(get_db)):
+    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Пациент не найден")
+    
+    docs = db.query(models.Document).filter(
+        models.Document.patient_id == patient_id,
+        models.Document.extracted_text.isnot(None)
+    ).all()
+
+    try:
+        inputs = extract_prevent_inputs(patient, docs)
+        risk = calculate_prevent_risk(inputs)
+        return {
+            "inputs": inputs,
+            "risk": risk,
+            "patient_name": patient.full_name
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка расчета PREVENT: {str(e)}")
+
+@app.post("/api/patients/{patient_id}/prevent-calculate")
+def calculate_patient_prevent_risk(patient_id: int, payload: schemas.PreventCalculateRequest, db: Session = Depends(get_db)):
+    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Пациент не найден")
+    
+    try:
+        risk = calculate_prevent_risk(payload.dict())
+        return risk
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Ошибка расчета риска: {str(e)}")
+
 # --- Chat Sessions & Messages ---
 @app.get("/api/patients/{patient_id}/chat/sessions", response_model=List[schemas.ChatSessionResponse])
 def get_chat_sessions(patient_id: int, db: Session = Depends(get_db)):
@@ -442,6 +478,14 @@ async def stream_chat_message(
         "chronic_diseases": patient.chronic_diseases,
         "current_medications": patient.current_medications,
     }
+
+    # Automatically compute AHA PREVENT 10-year risk from patient documents
+    try:
+        prevent_inputs = extract_prevent_inputs(patient, patient_docs)
+        patient_profile["prevent_risk"] = calculate_prevent_risk(prevent_inputs)
+    except Exception as e:
+        print(f"[PREVENT Error in Chat Stream] {e}")
+        patient_profile["prevent_risk"] = None
 
     settings = get_all_settings_dict(db)
     api_keys = {
