@@ -16,7 +16,9 @@ import {
   Sun,
   Moon,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Utensils,
+  Activity
 } from "lucide-react";
 import { Patient, ChatSession } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -187,6 +189,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <LineChart className="w-5 h-5" />
+                </button>
+
+                {/* Nutrition */}
+                <button
+                  onClick={() => onSelectTab("nutrition")}
+                  title={t.sidebar.tabs.nutrition}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition ${
+                    activeTab === "nutrition"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                >
+                  <Utensils className="w-5 h-5" />
+                </button>
+
+                {/* Lifestyle */}
+                <button
+                  onClick={() => onSelectTab("lifestyle")}
+                  title={t.sidebar.tabs.lifestyle}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition ${
+                    activeTab === "lifestyle"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                >
+                  <Activity className="w-5 h-5" />
                 </button>
 
                 {/* PREVENT Risk */}
@@ -424,6 +452,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <LineChart className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
                 <span className="truncate">{t.sidebar.tabs.labs}</span>
+              </button>
+
+              <button
+                onClick={() => onSelectTab("nutrition")}
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                  activeTab === "nutrition"
+                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                }`}
+              >
+                <Utensils className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <span className="truncate">{t.sidebar.tabs.nutrition}</span>
+              </button>
+
+              <button
+                onClick={() => onSelectTab("lifestyle")}
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                  activeTab === "lifestyle"
+                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <span className="truncate">{t.sidebar.tabs.lifestyle}</span>
               </button>
 
               <button

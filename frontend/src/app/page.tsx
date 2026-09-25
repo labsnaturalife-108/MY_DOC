@@ -7,6 +7,8 @@ import { DocumentFolders } from "@/components/DocumentFolders";
 import { LabCharts } from "@/components/LabCharts";
 import { ChatView } from "@/components/ChatView";
 import { PreventCalculatorView } from "@/components/PreventCalculatorView";
+import { NutritionView } from "@/components/NutritionView";
+import { LifestyleView } from "@/components/LifestyleView";
 import { SettingsModal } from "@/components/SettingsModal";
 import { Patient, ChatSession, api } from "@/lib/api";
 import { UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-react";
@@ -294,6 +296,30 @@ export default function Home() {
 
             {activeTab === "prevent" && (
               <PreventCalculatorView
+                patient={activePatient}
+                onNavigateToChat={(query) => {
+                  if (query) {
+                    setPrefillChatQuery(query);
+                  }
+                  setActiveTab("chat");
+                }}
+              />
+            )}
+
+            {activeTab === "nutrition" && (
+              <NutritionView
+                patient={activePatient}
+                onNavigateToChat={(query) => {
+                  if (query) {
+                    setPrefillChatQuery(query);
+                  }
+                  setActiveTab("chat");
+                }}
+              />
+            )}
+
+            {activeTab === "lifestyle" && (
+              <LifestyleView
                 patient={activePatient}
                 onNavigateToChat={(query) => {
                   if (query) {
