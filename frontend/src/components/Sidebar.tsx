@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { language, t } = useLanguage();
 
   return (
-    <aside className="w-80 flex flex-col bg-white dark:bg-zinc-900/95 border-r border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 select-none transition-colors duration-150">
+    <aside className="w-[390px] shrink-0 flex flex-col bg-white dark:bg-zinc-900/95 border-r border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 select-none transition-colors duration-150">
       {/* Brand Header */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
@@ -155,53 +155,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Tabs for Active Patient */}
       {activePatient && (
-        <div className="p-2 border-b border-zinc-200 dark:border-zinc-800/80 grid grid-cols-2 gap-1 text-xs">
+        <div className="p-2 border-b border-zinc-200 dark:border-zinc-800/80 grid grid-cols-2 gap-1.5 text-xs">
           <button
             onClick={() => onSelectTab("chat")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
               activeTab === "chat"
                 ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
             }`}
           >
-            <Bot className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            {t.sidebar.tabs.chat}
+            <Bot className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+            <span className="truncate">{t.sidebar.tabs.chat}</span>
           </button>
 
           <button
             onClick={() => onSelectTab("profile")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
               activeTab === "profile"
                 ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
             }`}
           >
-            <User className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            {t.sidebar.tabs.profile}
+            <User className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+            <span className="truncate">{t.sidebar.tabs.profile}</span>
           </button>
 
           <button
             onClick={() => onSelectTab("folders")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
               activeTab === "folders"
                 ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
             }`}
           >
-            <FolderOpen className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            {t.sidebar.tabs.folders}
+            <FolderOpen className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+            <span className="truncate">{t.sidebar.tabs.folders}</span>
           </button>
 
           <button
             onClick={() => onSelectTab("labs")}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
               activeTab === "labs"
                 ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
             }`}
           >
-            <LineChart className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            {t.sidebar.tabs.labs}
+            <LineChart className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+            <span className="truncate">{t.sidebar.tabs.labs}</span>
           </button>
 
           <button
@@ -213,11 +213,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <div className="flex items-center gap-2">
-              <HeartPulse className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
+              <HeartPulse className="w-3.5 h-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
               <span>{t.sidebar.tabs.prevent}</span>
             </div>
             <span className="text-[10px] font-mono uppercase bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800/50">
-              AHA 10-лет
+              {language === "ru" ? "AHA 10-лет" : "AHA 10-YR"}
             </span>
           </button>
         </div>
