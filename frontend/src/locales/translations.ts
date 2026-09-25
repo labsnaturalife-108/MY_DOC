@@ -55,6 +55,8 @@ export const translations = {
       lmStudioOffline: "LM Studio офлайн",
       patientMenu: "Меню пациента",
       deletePatient: "Удалить пациента",
+      collapse: "Свернуть панель",
+      expand: "Развернуть панель",
     },
     welcome: {
       title: "Добро пожаловать в MY_DOC",
@@ -321,6 +323,8 @@ export const translations = {
       lmStudioOffline: "LM Studio Offline",
       patientMenu: "Patient Menu",
       deletePatient: "Delete Patient",
+      collapse: "Collapse sidebar",
+      expand: "Expand sidebar",
     },
     welcome: {
       title: "Welcome to MY_DOC",
