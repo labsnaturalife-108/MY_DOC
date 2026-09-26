@@ -34,6 +34,7 @@ import {
 import { Patient, LabMetric, api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { getBiomarkerDetail } from "@/lib/biomarkerInfo";
 
 interface LabChartsProps {
   patient: Patient;
@@ -57,6 +58,8 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
   const [metrics, setMetrics] = useState<LabMetric[]>([]);
   const [activePanelId, setActivePanelId] = useState<string>("cbc");
   const [selectedMetric, setSelectedMetric] = useState<string>("");
+  const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null);
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [reparsing, setReparsing] = useState(false);
   const [reparseMessage, setReparseMessage] = useState<string | null>(null);
@@ -419,11 +422,12 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
             <span>{t.labs.found} {panelSummaryList.length}</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-            {panelSummaryList.map(({ latest, history }) => {
+            {panelSummaryList.map(({ latest, history }, index) => {
               const isSelected = selectedMetric === latest.metric_name;
               const isHigh = latest.status === "high";
               const isLow = latest.status === "low";
               const isBorderline = latest.status === "borderline";
+              const isTooltipActive = hoveredTooltip === latest.metric_name || activeTooltip === latest.metric_name;
 
               const statusBadgeText = isHigh 
                 ? (language === "ru" ? "Выше" : "High") 
@@ -433,33 +437,96 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                 ? (language === "ru" ? "Граница" : "Border") 
                 : (language === "ru" ? "Норма" : "Normal");
 
+              const info = getBiomarkerDetail(latest.metric_name, language) || {
+                category: language === "ru" ? "Лабораторный показатель" : "Lab Biomarker",
+                whatIs: language === "ru" 
+                  ? `Количественное измерение показателя «${latest.metric_name}» в биоматериале пациента.`
+                  : `Quantitative measurement of "${latest.metric_name}" in the patient's biological sample.`,
+                clinicalImpact: language === "ru"
+                  ? "Используется для оценки текущего функционального состояния организма и мониторинга динамики."
+                  : "Used to assess current organ function and monitor physiological trends over time."
+              };
+
+              // Responsive positioning for popover
+              const isFirstColMobile = index % 2 === 0;
+              const isFirstColDesktop = index % 5 === 0;
+              const isLastColDesktop = index % 5 === 4;
+
+              const tooltipPos = `${isFirstColMobile ? "left-0" : "right-0"} ${
+                isFirstColDesktop 
+                  ? "lg:left-0 lg:right-auto lg:translate-x-0" 
+                  : isLastColDesktop 
+                  ? "lg:right-0 lg:left-auto lg:translate-x-0" 
+                  : "lg:left-1/2 lg:right-auto lg:-translate-x-1/2"
+              }`;
+
+              const arrowPos = `${isFirstColMobile ? "left-6" : "right-6"} ${
+                isFirstColDesktop 
+                  ? "lg:left-6 lg:right-auto lg:translate-x-0" 
+                  : isLastColDesktop 
+                  ? "lg:right-6 lg:left-auto lg:translate-x-0" 
+                  : "lg:left-1/2 lg:right-auto lg:-translate-x-1/2"
+              }`;
+
               return (
-                <button
+                <div
                   key={latest.metric_name}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedMetric(latest.metric_name)}
-                  className={`text-left p-3 rounded-xl border transition-all flex flex-col justify-between ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedMetric(latest.metric_name);
+                    }
+                  }}
+                  className={`relative text-left p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer select-none ${
                     isSelected
                       ? "border-emerald-500 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500 shadow-sm"
                       : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
-                  }`}
+                  } ${isTooltipActive ? "z-40" : "hover:z-20"}`}
                 >
                   <div className="flex items-start justify-between gap-1 mb-1">
-                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">
+                    <span 
+                      className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1 flex-1 pr-0.5" 
+                      title={latest.metric_name}
+                    >
                       {latest.metric_name}
                     </span>
-                    <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase shrink-0 ${
-                        isHigh
-                          ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
-                          : isLow
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
-                          : isBorderline
-                          ? "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-400"
-                          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
-                      }`}
-                    >
-                      {statusBadgeText}
-                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span
+                        className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase shrink-0 ${
+                          isHigh
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
+                            : isLow
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                            : isBorderline
+                            ? "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-400"
+                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                        }`}
+                      >
+                        {statusBadgeText}
+                      </span>
+                      {/* Little circular 'i' icon in the corner */}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTooltip(activeTooltip === latest.metric_name ? null : latest.metric_name);
+                        }}
+                        onMouseEnter={() => setHoveredTooltip(latest.metric_name)}
+                        onMouseLeave={() => setHoveredTooltip(null)}
+                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-serif font-bold italic transition-all cursor-pointer ${
+                          isTooltipActive
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 hover:text-emerald-700 dark:hover:text-emerald-300"
+                        }`}
+                        title={language === "ru" ? "Что обозначает показатель и на что влияет" : "Biomarker details & clinical significance"}
+                      >
+                        i
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-baseline justify-between mt-1">
@@ -482,7 +549,60 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                       </span>
                     )}
                   </div>
-                </button>
+
+                  {/* Tooltip Popover */}
+                  {isTooltipActive && (
+                    <div
+                      role="tooltip"
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseEnter={() => setHoveredTooltip(latest.metric_name)}
+                      onMouseLeave={() => setHoveredTooltip(null)}
+                      className={`absolute z-50 bottom-[calc(100%+8px)] ${tooltipPos} w-72 sm:w-80 p-3.5 bg-zinc-900/95 dark:bg-zinc-950/95 text-zinc-100 rounded-2xl shadow-2xl border border-zinc-700/80 backdrop-blur-md text-xs pointer-events-auto transition-all animate-in fade-in zoom-in-95 duration-150`}
+                    >
+                      <div className="flex items-center justify-between border-b border-zinc-800 pb-2 mb-2.5 gap-2">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-400 truncate">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{latest.metric_name}</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-400 font-normal px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700 shrink-0">
+                          {info.category}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5 text-left">
+                        <div>
+                          <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 dark:text-emerald-300 flex items-center gap-1">
+                            <span>{language === "ru" ? "Что обозначает показатель:" : "What it means:"}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-200 mt-0.5 leading-relaxed font-normal">
+                            {info.whatIs}
+                          </p>
+                        </div>
+
+                        <div>
+                          <div className="text-[10px] uppercase font-bold tracking-wider text-amber-400 dark:text-amber-300 flex items-center gap-1">
+                            <span>{language === "ru" ? "На что влияет / значение:" : "Clinical impact / significance:"}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 mt-0.5 leading-relaxed font-normal">
+                            {info.clinicalImpact}
+                          </p>
+                        </div>
+
+                        {latest.reference_min !== undefined && latest.reference_max !== undefined && (
+                          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[10px] text-zinc-400 font-normal">
+                            <span>{language === "ru" ? "Референс:" : "Reference range:"}</span>
+                            <span className="font-semibold text-emerald-400">
+                              {latest.reference_min} – {latest.reference_max} {latest.unit}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Triangle Pointer */}
+                      <div className={`absolute top-full -mt-px border-4 border-transparent border-t-zinc-900/95 dark:border-t-zinc-950/95 ${arrowPos}`} />
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -558,6 +678,35 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
               </div>
             </div>
           </div>
+
+          {/* Biomarker Meaning and Clinical Significance Callout for Selected Metric */}
+          {(() => {
+            const selectedDetail = selectedMetric ? getBiomarkerDetail(selectedMetric, language) : null;
+            if (!selectedDetail) return null;
+            return (
+              <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-700/60 text-xs transition-all">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                      <Info className="w-3.5 h-3.5 shrink-0" />
+                      <span>{language === "ru" ? "Что обозначает показатель" : "What it means"}</span>
+                    </div>
+                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed text-xs">
+                      {selectedDetail.whatIs}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                      <span>{language === "ru" ? "На что влияет / клиническое значение" : "Clinical impact / significance"}</span>
+                    </div>
+                    <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed text-xs">
+                      {selectedDetail.clinicalImpact}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Interactive Chart */}
           <div className="h-72 w-full pt-2">
