@@ -16,7 +16,10 @@ import {
   CheckCircle,
   FolderOpen,
   ExternalLink,
-  Globe
+  Globe,
+  Copy,
+  Check,
+  Printer
 } from "lucide-react";
 import { Patient, ChatSession, ChatMessage, AIModel, api } from "@/lib/api";
 import { MedicalMarkdown } from "./MedicalMarkdown";
@@ -55,6 +58,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [activeSourcesTitle, setActiveSourcesTitle] = useState(
     language === "ru" ? "Использованные источники" : "Cited Sources"
   );
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -269,6 +273,269 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
+  const handleCopy = (messageId: number, content: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(content).then(() => {
+        setCopiedMessageId(messageId);
+        setTimeout(() => {
+          setCopiedMessageId((prev) => (prev === messageId ? null : prev));
+        }, 2000);
+      }).catch((err) => {
+        console.error("Failed to copy response text:", err);
+      });
+    }
+  };
+
+  const handlePrintMessage = (messageId: number, content: string) => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const contentEl = document.getElementById(`msg-content-${messageId}`);
+    const htmlContent = contentEl ? contentEl.innerHTML : content;
+
+    const patientName = patient.full_name || (language === "ru" ? "Пациент" : "Patient");
+    const patientAge = patient.age ? `${patient.age} ${language === "ru" ? "лет" : "y.o."}` : "";
+    const patientGender = patient.gender
+      ? (language === "ru"
+          ? (patient.gender.toLowerCase().includes("m") || patient.gender.toLowerCase().includes("муж") ? "Мужской" : "Женский")
+          : patient.gender)
+      : "";
+    const patientMetrics = [
+      patientAge,
+      patientGender,
+      patient.weight ? `${language === "ru" ? "Вес:" : "Weight:"} ${patient.weight} кг` : "",
+      patient.height ? `${language === "ru" ? "Рост:" : "Height:"} ${patient.height} см` : "",
+      patient.blood_type ? `${language === "ru" ? "Группа крови:" : "Blood group:"} ${patient.blood_type}` : "",
+    ]
+      .filter(Boolean)
+      .join("  •  ");
+
+    const diagnosesStr = patient.chronic_diseases || "";
+
+    const dateStr = new Date().toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const activeModelName = currentModel?.name || (language === "ru" ? "AI-доктор MY_DOC" : "AI Doctor MY_DOC");
+
+    // Create an invisible iframe for clean printing
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>MY_DOC - Консультация - ${patientName}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 15mm 15mm 15mm 15mm;
+          }
+          * {
+            box-sizing: border-box;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #111827;
+            background: #ffffff;
+            line-height: 1.6;
+            font-size: 11pt;
+            margin: 0;
+            padding: 10px;
+          }
+          .header {
+            border-bottom: 2px solid #059669;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .brand-title {
+            font-size: 20pt;
+            font-weight: 800;
+            color: #065f46;
+            margin: 0;
+            letter-spacing: -0.5px;
+          }
+          .brand-subtitle {
+            font-size: 9pt;
+            color: #059669;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+          }
+          .meta-info {
+            text-align: right;
+            font-size: 9pt;
+            color: #4b5563;
+            line-height: 1.4;
+          }
+          .patient-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #059669;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+          }
+          .patient-header {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+          }
+          .patient-details {
+            font-size: 9.5pt;
+            color: #475569;
+          }
+          .patient-diagnoses {
+            font-size: 9.5pt;
+            color: #b45309;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px dashed #cbd5e1;
+          }
+          .consultation-title {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .consultation-content {
+            color: #1e293b;
+            font-size: 10.5pt;
+          }
+          .consultation-content h1, .consultation-content h2 {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #065f46;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+          .consultation-content h3 {
+            font-size: 11pt;
+            font-weight: 600;
+            color: #1e293b;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+          .consultation-content p {
+            margin: 6px 0 10px 0;
+          }
+          .consultation-content ul, .consultation-content ol {
+            margin: 6px 0 10px 0;
+            padding-left: 20px;
+          }
+          .consultation-content li {
+            margin-bottom: 4px;
+          }
+          .consultation-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .consultation-content th, .consultation-content td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 10px;
+            text-align: left;
+            font-size: 9.5pt;
+          }
+          .consultation-content th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+          }
+          .consultation-content blockquote {
+            border-left: 3px solid #059669;
+            background-color: #f8fafc;
+            padding: 8px 12px;
+            margin: 10px 0;
+            font-style: italic;
+          }
+          .footer {
+            margin-top: 36px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 8pt;
+            color: #94a3b8;
+            text-align: center;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="brand-title">MY_DOC</h1>
+            <div class="brand-subtitle">${language === "ru" ? "Интеллектуальная клиническая система" : "Intelligent Clinical AI System"}</div>
+          </div>
+          <div class="meta-info">
+            <div><strong>${language === "ru" ? "Дата консультации:" : "Date:"}</strong> ${dateStr}</div>
+            <div><strong>${language === "ru" ? "Модель / Специалист:" : "Model / Specialist:"}</strong> ${activeModelName}</div>
+          </div>
+        </div>
+
+        <div class="patient-card">
+          <div class="patient-header">${patientName}</div>
+          ${patientMetrics ? `<div class="patient-details">${patientMetrics}</div>` : ""}
+          ${diagnosesStr ? `<div class="patient-diagnoses"><strong>${language === "ru" ? "Клинические диагнозы:" : "Diagnoses:"}</strong> ${diagnosesStr}</div>` : ""}
+        </div>
+
+        <div class="consultation-title">${language === "ru" ? "Медицинское заключение и клинические рекомендации" : "Medical Consultation & Clinical Recommendations"}</div>
+        <div class="consultation-content">
+          ${htmlContent}
+        </div>
+
+        <div class="footer">
+          ${language === "ru"
+            ? "Документ сформирован цифровой системой MY_DOC на основе медицинской карты пациента и доказательной медицины (PubMed / NCBI). Заключение носит рекомендательный характер и не заменяет очный врачебный осмотр."
+            : "Generated by MY_DOC AI based on patient health records and evidence-based medicine (PubMed / NCBI). This consultation is for informational support and does not replace an in-person medical evaluation."}
+        </div>
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 2500);
+    }, 250);
+  };
+
   return (
     <div className="flex h-full w-full relative overflow-hidden bg-zinc-50 dark:bg-zinc-950 transition-colors duration-150">
       {/* Main Chat Column */}
@@ -415,19 +682,56 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   {isUser ? (
                     m.content
                   ) : (
-                    <MedicalMarkdown content={m.content} />
+                    <div id={`msg-content-${m.id}`}>
+                      <MedicalMarkdown content={m.content} />
+                    </div>
                   )}
 
-                  {!isUser && parsedSources && parsedSources.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between">
-                      <button
-                        onClick={() => openSourcesForMessage(parsedSources, language === "ru" ? `Источники ответа #${m.id}` : `Sources for response #${m.id}`)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white border border-zinc-250 dark:border-zinc-700 transition"
-                      >
-                        <BookOpen className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                        <span>{language === "ru" ? `Использованные источники (${parsedSources.length})` : `Cited Sources (${parsedSources.length})`}</span>
-                      </button>
-                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500">RAG Context</span>
+                  {!isUser && (
+                    <div className="mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleCopy(m.id, m.content)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 transition shadow-2xs"
+                          title={t.chat.copyTooltip || (language === "ru" ? "Скопировать ответ в буфер обмена" : "Copy response to clipboard")}
+                        >
+                          {copiedMessageId === m.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                                {t.chat.copied || (language === "ru" ? "Скопировано!" : "Copied!")}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                              <span>{t.chat.copy || (language === "ru" ? "Копировать" : "Copy")}</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => handlePrintMessage(m.id, m.content)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 transition shadow-2xs"
+                          title={t.chat.printTooltip || (language === "ru" ? "Сохранить ответ в PDF / Распечатать" : "Save as PDF / Print")}
+                        >
+                          <Printer className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                          <span>{t.chat.savePdf || (language === "ru" ? "Сохранить в PDF" : "Save as PDF")}</span>
+                        </button>
+                      </div>
+
+                      {parsedSources && parsedSources.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openSourcesForMessage(parsedSources, language === "ru" ? `Источники ответа #${m.id}` : `Sources for response #${m.id}`)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white border border-zinc-250 dark:border-zinc-700 transition"
+                          >
+                            <BookOpen className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                            <span>{language === "ru" ? `Источники (${parsedSources.length})` : `Sources (${parsedSources.length})`}</span>
+                          </button>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 hidden sm:inline">RAG Context</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
