@@ -32,6 +32,8 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; filename: string } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
 
@@ -69,30 +71,86 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedFolderId) return;
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    const targetFolderId = selectedFolderId || (folders.length > 0 ? folders[0].id : null);
+    if (!targetFolderId) {
+      alert(language === "ru" ? "Пожалуйста, сначала выберите папку для документов" : "Please select a target folder first");
+      e.target.value = "";
+      return;
+    }
 
     setUploading(true);
     setUploadResult(null);
 
+    let successCount = 0;
+    let totalExtractedMetrics = 0;
+    const errors: string[] = [];
+
     try {
-      const res = await api.uploadDocument(patient.id, file, selectedFolderId);
-      const successMsg = language === "ru"
-        ? `✅ Файл "${res.filename}" успешно векторизован в ChromaDB` +
-          (res.extracted_metrics_count > 0 ? ` • Извлечено биомаркеров: ${res.extracted_metrics_count}` : "")
-        : `✅ File "${res.filename}" successfully vectorized in ChromaDB` +
-          (res.extracted_metrics_count > 0 ? ` • Extracted biomarkers: ${res.extracted_metrics_count}` : "");
-      setUploadResult(successMsg);
-      // Reload docs
-      const dList = await api.getDocuments(patient.id, selectedFolderId);
-      setDocuments(dList);
-      if (onRefreshLabs && res.extracted_metrics_count > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress({
+          current: i + 1,
+          total: files.length,
+          filename: file.name
+        });
+
+        try {
+          const res = await api.uploadDocument(patient.id, file, targetFolderId);
+          successCount++;
+          if (res.extracted_metrics_count) {
+            totalExtractedMetrics += res.extracted_metrics_count;
+          }
+        } catch (err: any) {
+          console.error(`Error uploading ${file.name}:`, err);
+          errors.push(`${file.name}: ${err.message || String(err)}`);
+        }
+      }
+
+      if (files.length === 1 && successCount === 1) {
+        const successMsg = language === "ru"
+          ? `✅ Файл "${files[0].name}" успешно векторизован в ChromaDB` +
+            (totalExtractedMetrics > 0 ? ` • Извлечено биомаркеров: ${totalExtractedMetrics}` : "")
+          : `✅ File "${files[0].name}" successfully vectorized in ChromaDB` +
+            (totalExtractedMetrics > 0 ? ` • Extracted biomarkers: ${totalExtractedMetrics}` : "");
+        setUploadResult(successMsg);
+      } else if (successCount > 0) {
+        const successMsg = language === "ru"
+          ? `✅ Успешно загружено и векторизовано файлов: ${successCount} из ${files.length}` +
+            (totalExtractedMetrics > 0 ? ` • Извлечено биомаркеров: ${totalExtractedMetrics}` : "") +
+            (errors.length > 0 ? ` ⚠️ (Ошибок: ${errors.length})` : "")
+          : `✅ Successfully uploaded & vectorized ${successCount} of ${files.length} files` +
+            (totalExtractedMetrics > 0 ? ` • Extracted biomarkers: ${totalExtractedMetrics}` : "") +
+            (errors.length > 0 ? ` ⚠️ (${errors.length} failed)` : "");
+        setUploadResult(successMsg);
+      }
+
+      if (errors.length > 0 && successCount === 0) {
+        alert(
+          (language === "ru" ? "Ошибка загрузки файлов:\n" : "Files upload error:\n") +
+          errors.join("\n")
+        );
+      }
+
+      // Refresh documents and folder counters
+      const [updatedDocs, updatedFolders] = await Promise.all([
+        api.getDocuments(patient.id, targetFolderId),
+        api.getFolders(patient.id)
+      ]);
+      setDocuments(updatedDocs);
+      setFolders(updatedFolders);
+
+      if (onRefreshLabs && totalExtractedMetrics > 0) {
         onRefreshLabs();
       }
     } catch (err: any) {
-      alert((language === "ru" ? "Ошибка загрузки файла: " : "File upload error: ") + (err.message || err));
+      alert((language === "ru" ? "Ошибка при обработке файлов: " : "Error processing files: ") + (err.message || err));
     } finally {
       setUploading(false);
+      setUploadProgress(null);
       e.target.value = "";
     }
   };
@@ -101,7 +159,9 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
     if (!confirm(t.folders.deleteConfirm)) return;
     try {
       await api.deleteDocument(patient.id, docId);
-      setDocuments(documents.filter((d) => d.id !== docId));
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      const fList = await api.getFolders(patient.id);
+      setFolders(fList);
     } catch (err: any) {
       alert((language === "ru" ? "Ошибка удаления: " : "Delete error: ") + (err.message || err));
     }
@@ -185,21 +245,55 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       </div>
 
       {/* Upload Banner */}
-      <div className="bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-750 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-2xl p-6 text-center transition relative shadow-sm">
+      <div 
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={() => setIsDragOver(false)}
+        className={`bg-white dark:bg-zinc-900 border-2 border-dashed rounded-2xl p-6 text-center transition-all relative shadow-sm ${
+          isDragOver 
+            ? "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20 scale-[1.005]" 
+            : "border-zinc-300 dark:border-zinc-750 hover:border-zinc-400 dark:hover:border-zinc-500"
+        }`}
+      >
         <input
           type="file"
           id="file-upload-input"
+          multiple
           onChange={handleFileUpload}
           disabled={uploading}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-          accept=".pdf,.txt,.md,.csv,.doc,.docx"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
+          accept=".pdf,.png,.jpg,.jpeg,.webp,.tiff,.bmp,.txt,.md,.csv,.doc,.docx,image/*,application/pdf"
         />
         <div className="flex flex-col items-center justify-center pointer-events-none">
           {uploading ? (
             <>
-              <Loader2 className="w-10 h-10 text-zinc-600 dark:text-zinc-300 animate-spin mb-3" />
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{t.folders.uploading}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              <Loader2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400 animate-spin mb-3" />
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                {uploadProgress && uploadProgress.total > 1
+                  ? (language === "ru"
+                      ? `Загрузка и обработка: ${uploadProgress.current} из ${uploadProgress.total}`
+                      : `Uploading and processing: ${uploadProgress.current} of ${uploadProgress.total}`)
+                  : t.folders.uploading}
+              </p>
+              {uploadProgress && (
+                <p className="text-xs font-mono text-zinc-500 dark:text-zinc-400 mt-1 max-w-md truncate">
+                  {uploadProgress.filename}
+                </p>
+              )}
+              {uploadProgress && uploadProgress.total > 1 && (
+                <div className="w-56 bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.round((uploadProgress.current / uploadProgress.total) * 100)}%`
+                    }}
+                  />
+                </div>
+              )}
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                 {language === "ru" 
                   ? "Генерируются эмбеддинги для RAG и распознаются лабораторные биомаркеры" 
                   : "Generating RAG vector embeddings & extracting lab biomarkers"}
@@ -207,7 +301,11 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
             </>
           ) : (
             <>
-              <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-3 shadow-sm">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 shadow-sm transition-all duration-200 ${
+                isDragOver 
+                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 scale-110" 
+                  : "bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300"
+              }`}>
                 <UploadCloud className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">

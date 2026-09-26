@@ -104,7 +104,7 @@ export const translations = {
       title: "Файлы и база знаний (RAG)",
       subtitle: "Документы автоматически индексируются для поиска и извлечения показателей",
       dropzoneTitle: "Перетащите файлы сюда или нажмите для выбора",
-      dropzoneHint: "Поддерживаются PDF, изображения анализов (PNG, JPG), текстовые выписки",
+      dropzoneHint: "Поддерживаются PDF, изображения анализов (PNG, JPG), выписки (можно выбрать сразу несколько)",
       uploading: "Загрузка и RAG-индексация...",
       categories: {
         all: "Все файлы",
@@ -443,7 +443,7 @@ export const translations = {
       title: "Files & Knowledge Base (RAG)",
       subtitle: "Documents are automatically indexed for semantic search and clinical lab extraction",
       dropzoneTitle: "Drop files here or click to browse",
-      dropzoneHint: "Supports PDF reports, lab scans/images (PNG, JPG), clinical records",
+      dropzoneHint: "Supports PDF reports, lab scans/images (PNG, JPG), records (multiple files supported)",
       uploading: "Uploading and RAG indexing...",
       categories: {
         all: "All Files",
