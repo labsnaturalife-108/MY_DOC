@@ -633,20 +633,23 @@ Please respect my dietary pattern strictly.`;
                 <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    {language === "ru" ? "Строго исключено в лакто-вегетарианстве:" : "Strictly excluded in lacto-vegetarian:"}
+                    {language === "ru" ? "Вегетарианские продукты, требующие ограничения при ваших показателях:" : "Vegetarian foods to limit based on your clinical profile:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
-                      {language === "ru" ? "Все виды мяса и птицы (говядина, свинина, птица)" : "All meat & poultry"}
+                      {language === "ru" ? "Высокожирные молочные продукты: жирные и плавленые сыры, сливочное масло, сливки 30%+, избыток гхи (насыщенные жиры повышают ЛПНП и риск роста бляшек)" : "High-fat dairy: aged & processed cheeses, butter, heavy cream, excess ghee (saturated fats elevate LDL and plaque risk)"}
                     </span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
-                      {language === "ru" ? "Рыба, морепродукты и икра" : "Fish, seafood and caviar"}
+                      {language === "ru" ? "Соленые и рассольные сыры (сулугуни, брынза, фета) — избыток натрия перегружает сосуды и почки" : "High-sodium brined cheeses (feta, sulguni, brynza) — excess sodium strains vascular wall & kidneys"}
                     </span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
-                      {language === "ru" ? "Яйца и любые блюда с яйцами (выпечка, майонез)" : "Eggs & egg products (mayo, baked goods)"}
+                      {language === "ru" ? "Тропические масла (кокосовое, пальмовое) — содержат до 85% насыщенных жирных кислот, атерогенны" : "Tropical oils (coconut, palm) — up to 85% saturated fatty acids, highly atherogenic"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
-                      {language === "ru" ? "Желатин животного происхождения" : "Animal gelatin"}
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                      {language === "ru" ? "Избыток пуринов: шпинат, щавель, спаржа, грибы, избыток бобовых без вымачивания (нагрузка при повышенной мочевой кислоте)" : "High purine foods: spinach, sorrel, asparagus, mushrooms, unsoaked legumes (strains uric acid levels)"}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                      {language === "ru" ? "Сладкие творожные массы, глазированные сырки, десерты с сахаром (скачки глюкозы, триглицеридов и инсулина)" : "Sweet dairy desserts, glazed curd bars, sweetened condensed milk (spikes glucose & triglycerides)"}
                     </span>
                   </div>
                 </div>
@@ -656,20 +659,26 @@ Please respect my dietary pattern strictly.`;
                 <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    {language === "ru" ? "Строго исключено в веганстве:" : "Strictly excluded in veganism:"}
+                    {language === "ru" ? "Веганские продукты, требующие ограничения при ваших показателях:" : "Vegan foods to limit based on your clinical profile:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
-                      {language === "ru" ? "Мясо, птица, рыба, морепродукты" : "Meat, poultry, fish, seafood"}
+                      {language === "ru" ? "Кокосовое масло, кокосовые сливки и молоко, пальмовый жир (скрытые насыщенные жиры, резко повышающие ЛПНП)" : "Coconut oil, coconut cream/milk, palm fat (hidden saturated fats drastically elevating LDL)"}
                     </span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
-                      {language === "ru" ? "Молоко, творог, сыры, масло, йогурты" : "Milk, cottage cheese, butter, cheese, yogurt"}
+                      {language === "ru" ? "Ультра-обработанные веганские сыры на крахмале/кокосовом жире и жареные веганские полуфабрикаты" : "Processed vegan 'cheeses' (starch + coconut oil) and commercial fried mock-meats"}
                     </span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
-                      {language === "ru" ? "Яйца и продукты с яичным альбумином" : "Eggs & albumin products"}
+                      {language === "ru" ? "Концентрированная фруктоза: сироп агавы, финиковые сиропы в избытке (стимулируют выработку мочевой кислоты и триглицеридов)" : "Concentrated fructose: agave syrup, heavy date syrup (stimulates liver production of uric acid & triglycerides)"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
-                      {language === "ru" ? "Мед и продукты пчеловодства" : "Honey and bee products"}
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                      {language === "ru" ? "Избыток соевого соуса, консервации и соленых снеков (натриевая перегрузка сосудистого русла и почек)" : "Excess soy sauce, pickles & salted snacks (sodium overload damaging vascular bed and kidneys)"}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                      {language === "ru" ? "Рафинированные растительные масла с избытком омега-6 (подсолнечное, кукурузное) — провоцируют воспаление сосудов" : "Refined omega-6 vegetable oils (sunflower, corn) — fuel systemic vascular inflammation"}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                      {language === "ru" ? "Дрожжевые хлопья (nutritional yeast) и грибы в больших количествах (высокая пуриновая нагрузка)" : "Nutritional yeast and mushrooms in large amounts (high purine load for uric acid management)"}
                     </span>
                   </div>
                 </div>
