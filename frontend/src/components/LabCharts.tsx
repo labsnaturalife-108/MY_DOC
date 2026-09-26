@@ -19,7 +19,8 @@ import {
   FlaskConical,
   Dna,
   ShieldAlert,
-  Info
+  Info,
+  Printer
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -284,6 +285,578 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
     }
   };
 
+  const generateChartSvg = (
+    data: { record_date: string; value: number }[],
+    refMin: number | null,
+    refMax: number | null,
+    unit: string,
+    metricName: string
+  ): string => {
+    if (!data || data.length === 0) return "";
+
+    const width = 760;
+    const height = 240;
+    const padLeft = 65;
+    const padRight = 50;
+    const padTop = 35;
+    const padBottom = 45;
+
+    const chartW = width - padLeft - padRight;
+    const chartH = height - padTop - padBottom;
+
+    const values = data.map((d) => Number(d.value)).filter((v) => !isNaN(v));
+    if (values.length === 0) return "";
+
+    let minVal = Math.min(...values);
+    let maxVal = Math.max(...values);
+
+    if (refMin !== null && !isNaN(refMin)) minVal = Math.min(minVal, refMin);
+    if (refMax !== null && !isNaN(refMax)) maxVal = Math.max(maxVal, refMax);
+
+    const valSpan = maxVal - minVal || (maxVal > 0 ? maxVal * 0.2 : 1);
+    const yMin = Math.max(0, minVal - valSpan * 0.15);
+    const yMax = maxVal + valSpan * 0.15;
+    const ySpan = yMax - yMin || 1;
+
+    const getY = (val: number) => padTop + (1 - (val - yMin) / ySpan) * chartH;
+    const getX = (idx: number) =>
+      data.length === 1
+        ? padLeft + chartW / 2
+        : padLeft + (idx / (data.length - 1)) * chartW;
+
+    const points = data.map((d, i) => ({
+      x: getX(i),
+      y: getY(d.value),
+      date: d.record_date,
+      val: d.value,
+    }));
+
+    const lineD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+    const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${(padTop + chartH).toFixed(1)} L ${points[0].x.toFixed(1)} ${(padTop + chartH).toFixed(1)} Z`;
+
+    const gridSteps = 4;
+    let gridLines = "";
+    for (let i = 0; i <= gridSteps; i++) {
+      const val = yMin + (i / gridSteps) * ySpan;
+      const y = getY(val);
+      gridLines += `
+        <line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${(width - padRight).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="${(padLeft - 8).toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="#94a3b8" font-family="sans-serif">${val >= 100 ? Math.round(val) : val.toFixed(1)}</text>
+      `;
+    }
+
+    let refLines = "";
+    if (refMin !== null && !isNaN(refMin) && refMin >= yMin && refMin <= yMax) {
+      const yMinLine = getY(refMin);
+      refLines += `
+        <line x1="${padLeft}" y1="${yMinLine.toFixed(1)}" x2="${(width - padRight).toFixed(1)}" y2="${yMinLine.toFixed(1)}" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="${(width - padRight + 5).toFixed(1)}" y="${(yMinLine + 3).toFixed(1)}" font-size="8.5" fill="#2563eb" font-weight="bold" font-family="sans-serif">Мин: ${refMin}</text>
+      `;
+    }
+    if (refMax !== null && !isNaN(refMax) && refMax >= yMin && refMax <= yMax) {
+      const yMaxLine = getY(refMax);
+      refLines += `
+        <line x1="${padLeft}" y1="${yMaxLine.toFixed(1)}" x2="${(width - padRight).toFixed(1)}" y2="${yMaxLine.toFixed(1)}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="${(width - padRight + 5).toFixed(1)}" y="${(yMaxLine + 3).toFixed(1)}" font-size="8.5" fill="#dc2626" font-weight="bold" font-family="sans-serif">Макс: ${refMax}</text>
+      `;
+    }
+
+    let dataPoints = "";
+    points.forEach((p) => {
+      dataPoints += `
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+        <rect x="${(p.x - 22).toFixed(1)}" y="${(p.y - 20).toFixed(1)}" width="44" height="15" rx="4" fill="#065f46" />
+        <text x="${p.x.toFixed(1)}" y="${(p.y - 9).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="bold" fill="#ffffff" font-family="sans-serif">${p.val}</text>
+        <text x="${p.x.toFixed(1)}" y="${(padTop + chartH + 18).toFixed(1)}" text-anchor="middle" font-size="9" fill="#64748b" font-family="sans-serif">${p.date}</text>
+      `;
+    });
+
+    return `
+      <svg viewBox="0 0 ${width} ${height}" width="100%" height="240" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px;">
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#10b981" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        ${refLines}
+        <path d="${areaD}" fill="url(#chartGrad)"/>
+        <path d="${lineD}" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dataPoints}
+      </svg>
+    `;
+  };
+
+  const generateSparklineSvg = (history: LabMetric[]): string => {
+    if (!history || history.length < 2) return "";
+    const w = 90;
+    const h = 22;
+    const pad = 3;
+    const vals = history.map((m) => Number(m.value)).filter((v) => !isNaN(v));
+    if (vals.length < 2) return "";
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const span = max - min || 1;
+    const pts = history.map((item, i) => {
+      const x = pad + (i / (history.length - 1)) * (w - pad * 2);
+      const y = pad + (1 - (Number(item.value) - min) / span) * (h - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const isRising = vals[vals.length - 1] > vals[0];
+    const stroke = isRising ? "#ef4444" : "#10b981";
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:inline-block; vertical-align:middle;"><polyline points="${pts.join(" ")}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  };
+
+  const handlePrintReport = () => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const patientName = patient.full_name || (language === "ru" ? "Пациент" : "Patient");
+    const patientAge = patient.age ? `${patient.age} ${language === "ru" ? "лет" : "y.o."}` : "";
+    const patientGender = patient.gender
+      ? (language === "ru"
+          ? (patient.gender.toLowerCase().includes("m") || patient.gender.toLowerCase().includes("муж") ? "Мужской" : "Женский")
+          : patient.gender)
+      : "";
+    const patientMetrics = [
+      patientAge,
+      patientGender,
+      patient.weight ? `${language === "ru" ? "Вес:" : "Weight:"} ${patient.weight} кг` : "",
+      patient.height ? `${language === "ru" ? "Рост:" : "Height:"} ${patient.height} см` : "",
+      patient.blood_type ? `${language === "ru" ? "Группа крови:" : "Blood group:"} ${patient.blood_type}` : "",
+    ]
+      .filter(Boolean)
+      .join("  •  ");
+
+    const diagnosesStr = patient.chronic_diseases || "";
+
+    const dateStr = new Date().toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const targetMetric = selectedMetric || (panelMetricNames.length > 0 ? panelMetricNames[0] : "");
+    const targetHistory = targetMetric
+      ? metrics
+          .filter((m) => m.metric_name === targetMetric)
+          .sort((a, b) => new Date(a.record_date).getTime() - new Date(b.record_date).getTime())
+      : [];
+
+    const latest = targetHistory.length > 0 ? targetHistory[targetHistory.length - 1] : null;
+    const targetUnit = latest?.unit || "";
+    const targetRefMin = latest?.reference_min ?? null;
+    const targetRefMax = latest?.reference_max ?? null;
+
+    const detail = targetMetric ? getBiomarkerDetail(targetMetric, language) : null;
+
+    const chartSvg = generateChartSvg(
+      targetHistory.map((h) => ({ record_date: h.record_date, value: Number(h.value) })),
+      targetRefMin,
+      targetRefMax,
+      targetUnit,
+      targetMetric
+    );
+
+    const summaryRowsHtml = panelSummaryList
+      .map(({ latest: mLatest, history }) => {
+        const isHigh = mLatest.status === "high";
+        const isLow = mLatest.status === "low";
+        const isBorderline = mLatest.status === "borderline";
+        const statusText = isHigh
+          ? (language === "ru" ? "Выше нормы" : "High")
+          : isLow
+          ? (language === "ru" ? "Ниже нормы" : "Low")
+          : isBorderline
+          ? (language === "ru" ? "Граница" : "Borderline")
+          : (language === "ru" ? "В норме" : "Normal");
+
+        const statusBg = isHigh ? "#fee2e2" : isLow ? "#fef3c7" : isBorderline ? "#ffedd5" : "#dcfce7";
+        const statusColor = isHigh ? "#991b1b" : isLow ? "#92400e" : isBorderline ? "#9a3412" : "#166534";
+
+        const refStr =
+          mLatest.reference_min !== undefined && mLatest.reference_max !== undefined
+            ? `${mLatest.reference_min} – ${mLatest.reference_max} ${mLatest.unit}`
+            : "—";
+
+        const sparklineSvg = generateSparklineSvg(history);
+
+        return `
+          <tr>
+            <td style="font-weight: 600; color: #0f172a;">${mLatest.metric_name}</td>
+            <td style="font-weight: 700; color: #1e293b;">${mLatest.value} <span style="font-size: 8.5pt; font-weight: normal; color: #64748b;">${mLatest.unit}</span></td>
+            <td style="color: #475569; font-size: 9pt;">${mLatest.record_date}</td>
+            <td style="color: #64748b; font-size: 9pt;">${refStr}</td>
+            <td>
+              <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 8pt; font-weight: 700; background-color: ${statusBg}; color: ${statusColor};">
+                ${statusText}
+              </span>
+            </td>
+            <td style="text-align: center;">${sparklineSvg}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const measurementsRowsHtml = targetHistory
+      .slice()
+      .reverse()
+      .map((h, i, arr) => {
+        const isHigh = h.status === "high";
+        const isLow = h.status === "low";
+        const isBorderline = h.status === "borderline";
+        const statusText = isHigh
+          ? (language === "ru" ? "Выше нормы" : "High")
+          : isLow
+          ? (language === "ru" ? "Ниже нормы" : "Low")
+          : isBorderline
+          ? (language === "ru" ? "Граница" : "Borderline")
+          : (language === "ru" ? "В норме" : "Normal");
+
+        const statusBg = isHigh ? "#fee2e2" : isLow ? "#fef3c7" : isBorderline ? "#ffedd5" : "#dcfce7";
+        const statusColor = isHigh ? "#991b1b" : isLow ? "#92400e" : isBorderline ? "#9a3412" : "#166534";
+
+        const prev = arr[i + 1];
+        let diffStr = "—";
+        if (prev) {
+          const diff = Number((h.value - prev.value).toFixed(2));
+          diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+        }
+
+        return `
+          <tr>
+            <td style="font-weight: 600; color: #334155;">${h.record_date}</td>
+            <td style="font-weight: 700; color: #0f172a;">${h.value} ${h.unit}</td>
+            <td style="color: #64748b; font-size: 9pt;">${h.reference_min ?? "—"} – ${h.reference_max ?? "—"} ${h.unit}</td>
+            <td>
+              <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 8pt; font-weight: 700; background-color: ${statusBg}; color: ${statusColor};">
+                ${statusText}
+              </span>
+            </td>
+            <td style="font-weight: 600; color: #475569; font-size: 9pt;">${diffStr}</td>
+            <td style="color: #64748b; font-size: 8.5pt;">${h.notes || "—"}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>MY_DOC - Динамика анализов - ${patientName}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 14mm 14mm 14mm 14mm;
+          }
+          * {
+            box-sizing: border-box;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #111827;
+            background: #ffffff;
+            line-height: 1.5;
+            font-size: 10pt;
+            margin: 0;
+            padding: 10px;
+          }
+          .header {
+            border-bottom: 2px solid #059669;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          }
+          .brand-title {
+            font-size: 20pt;
+            font-weight: 800;
+            color: #065f46;
+            margin: 0;
+            letter-spacing: -0.5px;
+          }
+          .brand-subtitle {
+            font-size: 9pt;
+            color: #059669;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+          }
+          .meta-info {
+            text-align: right;
+            font-size: 9pt;
+            color: #4b5563;
+            line-height: 1.4;
+          }
+          .patient-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #059669;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+          }
+          .patient-header {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2px;
+          }
+          .patient-details {
+            font-size: 9pt;
+            color: #475569;
+          }
+          .patient-diagnoses {
+            font-size: 9pt;
+            color: #b45309;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px dashed #cbd5e1;
+          }
+          .section-title {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+          }
+          .chart-box {
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+          }
+          .metric-name {
+            font-size: 13pt;
+            font-weight: 800;
+            color: #065f46;
+          }
+          .metric-latest {
+            font-size: 13pt;
+            font-weight: 800;
+            color: #0f172a;
+          }
+          .detail-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            margin-bottom: 14px;
+            font-size: 8.5pt;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .detail-box-title {
+            font-weight: 700;
+            color: #166534;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            font-size: 7.5pt;
+            letter-spacing: 0.5px;
+          }
+          .detail-box-content {
+            color: #14532d;
+            margin-bottom: 4px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            margin-bottom: 16px;
+            font-size: 9pt;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          th, td {
+            border: 1px solid #cbd5e1;
+            padding: 5px 8px;
+            text-align: left;
+          }
+          th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #334155;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+          }
+          .footer {
+            margin-top: 24px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 7.5pt;
+            color: #94a3b8;
+            text-align: center;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="brand-title">MY_DOC</h1>
+            <div class="brand-subtitle">${language === "ru" ? "Клиническая динамика лабораторных показателей" : "Clinical Laboratory Biomarker Dynamics"}</div>
+          </div>
+          <div class="meta-info">
+            <div><strong>${language === "ru" ? "Дата формирования:" : "Date:"}</strong> ${dateStr}</div>
+            <div><strong>${language === "ru" ? "Панель:" : "Panel:"}</strong> ${activePanel.name}</div>
+          </div>
+        </div>
+
+        <div class="patient-card">
+          <div class="patient-header">${patientName}</div>
+          ${patientMetrics ? `<div class="patient-details">${patientMetrics}</div>` : ""}
+          ${diagnosesStr ? `<div class="patient-diagnoses"><strong>${language === "ru" ? "Диагнозы:" : "Diagnoses:"}</strong> ${diagnosesStr}</div>` : ""}
+        </div>
+
+        ${
+          targetMetric
+            ? `
+          <div class="chart-box">
+            <div class="metric-header">
+              <div>
+                <span class="metric-name">${targetMetric}</span>
+                <span style="font-size: 9.5pt; color: #64748b; margin-left: 6px;">(${targetUnit})</span>
+              </div>
+              <div class="metric-latest">
+                ${latest ? `${latest.value} ${targetUnit}` : ""}
+                ${
+                  targetRefMin !== null && targetRefMax !== null
+                    ? `<span style="font-size: 8.5pt; font-weight: normal; color: #64748b; margin-left: 8px;">(Норма: ${targetRefMin}–${targetRefMax})</span>`
+                    : ""
+                }
+              </div>
+            </div>
+
+            ${chartSvg}
+
+            ${
+              detail
+                ? `
+              <div class="detail-box">
+                <div class="detail-box-title">${language === "ru" ? "Что обозначает показатель" : "Biomarker explanation"}</div>
+                <div class="detail-box-content">${detail.whatIs}</div>
+                <div class="detail-box-title" style="color: #b45309; margin-top: 4px;">${language === "ru" ? "Клиническое значение и на что влияет" : "Clinical impact"}</div>
+                <div class="detail-box-content" style="color: #92400e;">${detail.clinicalImpact}</div>
+              </div>
+            `
+                : ""
+            }
+
+            ${
+              measurementsRowsHtml
+                ? `
+              <div class="section-title">
+                <span>${language === "ru" ? "Хронология измерений" : "Measurement History"} (${targetMetric})</span>
+                <span style="font-size: 8.5pt; font-weight: normal; color: #64748b;">${targetHistory.length} ${language === "ru" ? "измерений" : "data points"}</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>${language === "ru" ? "Дата" : "Date"}</th>
+                    <th>${language === "ru" ? "Значение" : "Value"}</th>
+                    <th>${language === "ru" ? "Референс" : "Reference"}</th>
+                    <th>${language === "ru" ? "Статус" : "Status"}</th>
+                    <th>${language === "ru" ? "Динамика" : "Change"}</th>
+                    <th>${language === "ru" ? "Примечание" : "Notes"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${measurementsRowsHtml}
+                </tbody>
+              </table>
+            `
+                : ""
+            }
+          </div>
+        `
+            : ""
+        }
+
+        ${
+          panelSummaryList.length > 0
+            ? `
+          <div style="page-break-before: auto;">
+            <div class="section-title">
+              <span>${language === "ru" ? "Сводная таблица панели:" : "Panel Summary Matrix:"} ${activePanel.name}</span>
+              <span style="font-size: 8.5pt; font-weight: normal; color: #64748b;">${panelSummaryList.length} ${language === "ru" ? "биомаркеров" : "biomarkers"}</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>${language === "ru" ? "Показатель" : "Biomarker"}</th>
+                  <th>${language === "ru" ? "Текущее" : "Latest"}</th>
+                  <th>${language === "ru" ? "Дата" : "Date"}</th>
+                  <th>${language === "ru" ? "Референсный интервал" : "Reference Range"}</th>
+                  <th>${language === "ru" ? "Статус" : "Status"}</th>
+                  <th style="text-align: center; width: 100px;">${language === "ru" ? "Тренд" : "Trend"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${summaryRowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `
+            : ""
+        }
+
+        <div class="footer">
+          ${
+            language === "ru"
+              ? "Документ сформирован системой MY_DOC на основе лабораторных исследований и доказательной медицины. Не является диагнозом и подлежит оценке лечащим врачом."
+              : "Generated by MY_DOC clinical system based on diagnostic laboratory tests. This report is for clinical evaluation and does not constitute a standalone medical diagnosis."
+          }
+        </div>
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 2500);
+    }, 250);
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Top Banner / Actions */}
@@ -308,6 +881,15 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
         </div>
 
         <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+          <button
+            onClick={handlePrintReport}
+            className="px-3.5 py-2 bg-white hover:bg-zinc-50 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-200 dark:border-zinc-700 shadow-2xs whitespace-nowrap"
+            title={t.labs.savePdfTooltip || (language === "ru" ? "Сохранить отчет с графиками в PDF / Печать" : "Save lab report with charts to PDF / Print")}
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{t.labs.savePdfBtn || (language === "ru" ? "Сохранить в PDF" : "Save to PDF")}</span>
+          </button>
+
           <button
             onClick={handleReparse}
             disabled={reparsing}
@@ -626,9 +1208,17 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                 <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                   {selectedMetric}
                 </h4>
-                <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 font-mono">
                   {currentUnit}
                 </span>
+                <button
+                  onClick={handlePrintReport}
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750 border border-zinc-200 dark:border-zinc-700 transition flex items-center gap-1.5 shadow-2xs"
+                  title={language === "ru" ? "Сохранить этот график и показатели в PDF" : "Save this chart and metrics to PDF"}
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{language === "ru" ? "В PDF" : "PDF"}</span>
+                </button>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 {t.labs.referenceRange}{" "}
