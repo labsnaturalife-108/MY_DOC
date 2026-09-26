@@ -15,6 +15,7 @@ from .parser import extract_text_from_file, parse_lab_metrics
 from .rag_engine import rag_engine
 from .llm_hub import llm_hub
 from .prevent_calculator import extract_prevent_inputs, calculate_prevent_risk
+from .pubmed_service import pubmed_service
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -639,14 +640,55 @@ async def stream_chat_message(
         "ollama": settings.get("url_ollama") or "http://localhost:11434/v1",
     }
 
+    # Medical internet resources config
+    med_resources_raw = settings.get("medical_resources_config")
+    try:
+        med_resources_config = json.loads(med_resources_raw) if med_resources_raw else None
+    except Exception:
+        med_resources_config = None
+
+    if not med_resources_config:
+        med_resources_config = {
+            "pubmed_enabled": True,
+            "pubmed_priority": True,
+            "cochrane_enabled": True,
+            "uptodate_enabled": True,
+            "mayo_enabled": True,
+            "custom_urls": ["https://pubmed.ncbi.nlm.nih.gov/"]
+        }
+
+    pubmed_articles = []
+    if med_resources_config.get("pubmed_enabled", True):
+        try:
+            pubmed_articles = await pubmed_service.search_pubmed(
+                user_query=payload.content,
+                patient_profile=patient_profile,
+                max_results=3
+            )
+        except Exception as ex:
+            print(f"[PubMed Stream Error]: {ex}")
+
     async def event_generator():
         accumulated_text = ""
-        # 1. Send sources metadata first
+        # 1. Send sources metadata first (RAG documents + PubMed studies)
         sources_meta = [{
             "filename": s["filename"],
             "folder": s["folder_type"],
             "snippet": (s["content"][:250].strip() + "...") if len(s["content"]) > 250 else s["content"].strip()
         } for s in rag_sources]
+
+        # Append PubMed citations to sources drawer
+        for p in pubmed_articles:
+            sources_meta.append({
+                "filename": f"PubMed: {p['title']}",
+                "folder": "pubmed",
+                "pmid": p["pmid"],
+                "url": p["url"],
+                "journal": p.get("journal", ""),
+                "pub_date": p.get("pub_date", ""),
+                "snippet": f"[{p.get('journal', 'NCBI')}, {p.get('pub_date', '')}] {p.get('abstract', '') or p.get('title', '')}"
+            })
+
         yield f"event: sources\ndata: {json.dumps(sources_meta, ensure_ascii=False)}\n\n"
 
         # 2. Stream tokens
@@ -657,7 +699,9 @@ async def stream_chat_message(
             patient_profile=patient_profile,
             context_sources=rag_sources,
             api_keys=api_keys,
-            local_urls=local_urls
+            local_urls=local_urls,
+            pubmed_sources=pubmed_articles,
+            medical_resources_config=med_resources_config
         ):
             accumulated_text += token
             yield f"event: token\ndata: {json.dumps({'delta': token}, ensure_ascii=False)}\n\n"

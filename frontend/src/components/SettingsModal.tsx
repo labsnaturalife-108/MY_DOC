@@ -1,7 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Check, Server, Key, Cpu, RefreshCw, Sun, Moon, Monitor, Languages } from "lucide-react";
+import { 
+  X, 
+  Check, 
+  Server, 
+  Key, 
+  Cpu, 
+  RefreshCw, 
+  Sun, 
+  Moon, 
+  Monitor, 
+  Languages, 
+  BookOpen, 
+  Globe, 
+  CheckCircle2, 
+  Plus, 
+  Trash2, 
+  ExternalLink, 
+  ShieldCheck 
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -27,6 +45,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     api_key_qwen: "",
   });
 
+  const [medResources, setMedResources] = useState({
+    pubmed_enabled: true,
+    pubmed_priority: true,
+    cochrane_enabled: true,
+    uptodate_enabled: true,
+    mayo_enabled: true,
+    custom_urls: ["https://pubmed.ncbi.nlm.nih.gov/"],
+    filter_level: "guidelines_trials",
+  });
+  const [newUrlInput, setNewUrlInput] = useState("");
+
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -42,6 +71,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
       const data = await api.getSettings();
       if (data.url_lmstudio) setLmstudioUrl(data.url_lmstudio);
       if (data.url_ollama) setOllamaUrl(data.url_ollama);
+      if (data.medical_resources_config) {
+        try {
+          const parsed = JSON.parse(data.medical_resources_config);
+          setMedResources((prev) => ({ ...prev, ...parsed }));
+        } catch (e) {}
+      }
       setKeys((prev) => ({
         ...prev,
         api_key_openai: data.api_key_openai || "",
@@ -54,6 +89,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleAddCustomUrl = () => {
+    const trimmed = newUrlInput.trim();
+    if (!trimmed) return;
+    const formatted = trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `https://${trimmed}`;
+    if (!medResources.custom_urls.includes(formatted)) {
+      setMedResources((prev) => ({
+        ...prev,
+        custom_urls: [...prev.custom_urls, formatted],
+      }));
+    }
+    setNewUrlInput("");
+  };
+
+  const handleRemoveCustomUrl = (urlToRemove: string) => {
+    setMedResources((prev) => ({
+      ...prev,
+      custom_urls: prev.custom_urls.filter((u) => u !== urlToRemove),
+    }));
   };
 
   const handleTestLocal = async () => {
@@ -87,6 +142,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     try {
       await api.saveSetting("url_lmstudio", lmstudioUrl);
       await api.saveSetting("url_ollama", ollamaUrl);
+      await api.saveSetting("medical_resources_config", JSON.stringify(medResources));
 
       for (const [key, val] of Object.entries(keys)) {
         if (val && !val.includes("...")) {
@@ -206,6 +262,204 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 <Monitor className="w-3.5 h-3.5 text-zinc-400" />
                 {language === "ru" ? "Системная" : "System"}
               </button>
+            </div>
+          </div>
+
+          {/* Section: Medical Internet Resources & Evidence Base (PubMed) */}
+          <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  {t.settings.medicalResources.title}
+                </span>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {t.settings.medicalResources.subtitle}
+                </p>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shrink-0 font-semibold">
+                NCBI • E-Utilities
+              </span>
+            </div>
+
+            {/* 1. Primary Evidence Source: PubMed */}
+            <div className={`p-3.5 rounded-xl border transition-all ${
+              medResources.pubmed_enabled 
+                ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 ring-1 ring-emerald-500/20" 
+                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 opacity-60"
+            }`}>
+              <div className="flex items-center justify-between gap-3 mb-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    {t.settings.medicalResources.pubmedTitle}
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold uppercase tracking-wider">
+                    {t.settings.medicalResources.pubmedBadge}
+                  </span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={medResources.pubmed_enabled}
+                    onChange={(e) => setMedResources({ ...medResources, pubmed_enabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-600 peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                {t.settings.medicalResources.pubmedDesc}
+              </p>
+              <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-emerald-200/50 dark:border-emerald-900/40 pt-2 text-[10px]">
+                <a 
+                  href="https://pubmed.ncbi.nlm.nih.gov/" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-emerald-700 dark:text-emerald-400 font-medium hover:underline flex items-center gap-1"
+                >
+                  <span>https://pubmed.ncbi.nlm.nih.gov/</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  {language === "ru" ? "Прямой API поиск и ссылки" : "Direct API search & citations"}
+                </span>
+              </div>
+            </div>
+
+            {/* Other Recognized Evidence Resources */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 block">
+                {language === "ru" ? "Дополнительные медицинские библиотеки:" : "Additional Evidence Resources:"}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {/* Cochrane */}
+                <div 
+                  onClick={() => setMedResources({ ...medResources, cochrane_enabled: !medResources.cochrane_enabled })}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between gap-2 select-none ${
+                    medResources.cochrane_enabled
+                      ? "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                      : "bg-zinc-100/50 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 opacity-50"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold block truncate text-zinc-900 dark:text-zinc-100">
+                      Cochrane Library
+                    </span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block truncate">
+                      {language === "ru" ? "Мета-анализы" : "Meta-analyses"}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={medResources.cochrane_enabled}
+                    onChange={() => {}}
+                    className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                </div>
+
+                {/* UpToDate */}
+                <div 
+                  onClick={() => setMedResources({ ...medResources, uptodate_enabled: !medResources.uptodate_enabled })}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between gap-2 select-none ${
+                    medResources.uptodate_enabled
+                      ? "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                      : "bg-zinc-100/50 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 opacity-50"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold block truncate text-zinc-900 dark:text-zinc-100">
+                      UpToDate
+                    </span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block truncate">
+                      {language === "ru" ? "Гайдлайны" : "Clinical guidelines"}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={medResources.uptodate_enabled}
+                    onChange={() => {}}
+                    className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                </div>
+
+                {/* Mayo Clinic */}
+                <div 
+                  onClick={() => setMedResources({ ...medResources, mayo_enabled: !medResources.mayo_enabled })}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between gap-2 select-none ${
+                    medResources.mayo_enabled
+                      ? "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+                      : "bg-zinc-100/50 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 opacity-50"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold block truncate text-zinc-900 dark:text-zinc-100">
+                      Mayo Clinic
+                    </span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block truncate">
+                      MedlinePlus
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={medResources.mayo_enabled}
+                    onChange={() => {}}
+                    className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Custom URLs Input & Tags */}
+            <div>
+              <label className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium mb-1.5 block">
+                {t.settings.medicalResources.customUrlsTitle}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newUrlInput}
+                  onChange={(e) => setNewUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddCustomUrl();
+                    }
+                  }}
+                  placeholder={t.settings.medicalResources.customUrlsPlaceholder}
+                  className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomUrl}
+                  className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1 transition shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{t.settings.medicalResources.addUrlBtn}</span>
+                </button>
+              </div>
+
+              {medResources.custom_urls.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {medResources.custom_urls.map((url) => (
+                    <span
+                      key={url}
+                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300"
+                    >
+                      <Globe className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="truncate max-w-[200px]">{url}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomUrl(url)}
+                        className="text-zinc-400 hover:text-rose-500 transition ml-1"
+                        title={language === "ru" ? "Удалить" : "Remove"}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

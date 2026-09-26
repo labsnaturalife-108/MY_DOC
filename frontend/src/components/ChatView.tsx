@@ -14,7 +14,9 @@ import {
   PanelRightOpen,
   BookOpen,
   CheckCircle,
-  FolderOpen
+  FolderOpen,
+  ExternalLink,
+  Globe
 } from "lucide-react";
 import { Patient, ChatSession, ChatMessage, AIModel, api } from "@/lib/api";
 import { MedicalMarkdown } from "./MedicalMarkdown";
@@ -245,6 +247,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
       ];
 
   const getFolderLabel = (fType: string) => {
+    if (fType === "pubmed") {
+      return language === "ru" ? "Доказательная медицина (PubMed)" : "PubMed Evidence";
+    }
     if (language === "ru") {
       switch (fType) {
         case "analyses": return "Лабораторные анализы";
@@ -307,8 +312,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
           </div>
 
-          {/* Right Action buttons: Sources Drawer Toggle */}
+          {/* Right Action buttons: PubMed Indicator & Sources Drawer Toggle */}
           <div className="flex items-center space-x-2">
+            <button
+              onClick={onOpenSettings}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition shadow-2xs"
+              title={language === "ru" ? "AI-доктор руководствуется исследованиями PubMed (NCBI). Нажмите для настройки" : "AI Doctor consults PubMed (NCBI) evidence. Click to configure"}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-semibold">PubMed</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">• Active</span>
+            </button>
+
             <button
               onClick={() => setIsSourcesDrawerOpen(!isSourcesDrawerOpen)}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 border transition ${
@@ -527,36 +542,65 @@ export const ChatView: React.FC<ChatViewProps> = ({
               {language === "ru" ? "Нет прикрепленных фрагментов документов" : "No attached document excerpts"}
             </div>
           ) : (
-            drawerSources.map((s: any, idx: number) => (
-              <div
-                key={idx}
-                className="bg-zinc-50 dark:bg-zinc-950 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800/90 shadow-sm space-y-2 hover:border-zinc-300 dark:hover:border-zinc-700 transition"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-750 font-medium truncate">
-                    {getFolderLabel(s.folder)}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
-                    #{idx + 1}
-                  </span>
-                </div>
+            drawerSources.map((s: any, idx: number) => {
+              const isPubMed = s.folder === "pubmed";
+              return (
+                <div
+                  key={idx}
+                  className={`p-3.5 rounded-xl border shadow-sm space-y-2 transition ${
+                    isPubMed
+                      ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800"
+                      : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800/90 hover:border-zinc-300 dark:hover:border-zinc-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium truncate ${
+                      isPubMed
+                        ? "bg-emerald-600 text-white font-bold uppercase tracking-wider"
+                        : "bg-zinc-200/80 dark:bg-zinc-850 text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-750"
+                    }`}>
+                      {getFolderLabel(s.folder)}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                      #{idx + 1}
+                    </span>
+                  </div>
 
-                <div className="flex items-center space-x-2 text-zinc-900 dark:text-zinc-200 text-xs font-semibold">
-                  <FileText className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
-                  <span className="truncate">{s.filename}</span>
-                </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-2 text-zinc-900 dark:text-zinc-200 text-xs font-semibold min-w-0">
+                      {isPubMed ? (
+                        <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                      )}
+                      <span className="truncate">{s.filename}</span>
+                    </div>
+                    {isPubMed && s.url && (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-emerald-700 dark:text-emerald-400 hover:underline shrink-0 text-[11px] font-medium flex items-center gap-0.5"
+                        title="Открыть публикацию на pubmed.ncbi.nlm.nih.gov"
+                      >
+                        <span>NCBI</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
 
-                <div className="p-2.5 bg-white dark:bg-zinc-900/90 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-800 dark:text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
-                  {s.snippet}
+                  <div className="p-2.5 bg-white dark:bg-zinc-900/90 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-800 dark:text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
+                    {s.snippet}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {/* Drawer Footer */}
         <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-          <span className="text-[11px]">ChromaDB Vector Store</span>
+          <span className="text-[11px]">ChromaDB • PubMed Evidence</span>
           <button
             onClick={() => setIsSourcesDrawerOpen(false)}
             className="px-3 py-1 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-300 hover:text-black dark:hover:text-white rounded-lg text-xs transition"

@@ -163,6 +163,50 @@ class LLMHub:
                 text = source.get("content", "").strip()
                 prompt_parts.append(f"\n[Документ {idx}: {doc_name} ({folder})]:\n{text}")
 
+        # Add Evidence-Based Medicine & PubMed resources if configured
+        if pubmed_sources:
+            prompt_parts.append("\n=== ДОКАЗАТЕЛЬНАЯ МЕДИЦИНА И КЛИНИЧЕСКИЕ ИССЛЕДОВАНИЯ (PUBMED / NCBI) ===")
+            prompt_parts.append(
+                "ПРАВИЛО ДОКАЗАТЕЛЬНОЙ МЕДИЦИНЫ (PUBMED):\n"
+                "Вы ОБЯЗАНЫ руководствоваться международными принципами доказательной медицины и актуальными исследованиями из базы данных PubMed (National Library of Medicine / NCBI).\n"
+                "1. Опирайтесь на приведённые ниже рецензируемые клинические статьи, мета-анализы и руководства.\n"
+                "2. В ответе обязательно делайте ссылки на эти первоисточники в виде кликабельных ссылок в формате: [PubMed: Название или PMID](https://pubmed.ncbi.nlm.nih.gov/{pmid}/).\n"
+                "3. Указывайте класс рекомендаций и уровень доказательности, если обсуждаются лекарственные препараты, статины или клинические вмешательства."
+            )
+            for idx, p in enumerate(pubmed_sources, start=1):
+                pmid = p.get("pmid")
+                title = p.get("title")
+                journal = p.get("journal")
+                date = p.get("pub_date")
+                authors = p.get("authors")
+                abstract = p.get("abstract", "")
+                url = p.get("url", f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/")
+                prompt_parts.append(
+                    f"\n[PubMed Исследование {idx}]:\n"
+                    f"- PMID: {pmid}\n"
+                    f"- Ссылка: {url}\n"
+                    f"- Название: {title}\n"
+                    f"- Журнал / Дата: {journal} ({date})\n"
+                    f"- Авторы: {authors}\n"
+                    f"- Аннотация / Результаты: {abstract if abstract else 'См. полный текст исследования по ссылке'}"
+                )
+
+        if medical_resources_config:
+            active_names = []
+            if medical_resources_config.get("pubmed_enabled", True):
+                active_names.append("PubMed / MEDLINE (ncbi.nlm.nih.gov)")
+            if medical_resources_config.get("cochrane_enabled", True):
+                active_names.append("Cochrane Library (cochranelibrary.com)")
+            if medical_resources_config.get("uptodate_enabled", True):
+                active_names.append("UpToDate Clinical Guidelines (uptodate.com)")
+            if medical_resources_config.get("mayo_enabled", True):
+                active_names.append("Mayo Clinic & MedlinePlus")
+            for c_url in medical_resources_config.get("custom_urls", []):
+                if c_url:
+                    active_names.append(c_url)
+            if active_names:
+                prompt_parts.append(f"\nАвторитетные медицинские интернет-ресурсы, утверждённые для консультации: {', '.join(active_names)}.")
+
         return "\n".join(prompt_parts)
 
     async def stream_chat(
@@ -173,10 +217,17 @@ class LLMHub:
         patient_profile: Dict[str, Any],
         context_sources: List[Dict[str, Any]],
         api_keys: Dict[str, str],
-        local_urls: Dict[str, str]
+        local_urls: Dict[str, str],
+        pubmed_sources: Optional[List[Dict[str, Any]]] = None,
+        medical_resources_config: Optional[Dict[str, Any]] = None
     ) -> AsyncGenerator[str, None]:
         """Streams LLM tokens, auto-detecting and routing to local LM Studio if available."""
-        system_content = self.build_system_prompt(patient_profile, context_sources)
+        system_content = self.build_system_prompt(
+            patient_profile,
+            context_sources,
+            pubmed_sources=pubmed_sources,
+            medical_resources_config=medical_resources_config
+        )
         full_messages = [{"role": "system", "content": system_content}] + messages
 
         lmstudio_base = local_urls.get("lmstudio", DEFAULT_LMSTUDIO_URL)
