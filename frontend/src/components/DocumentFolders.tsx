@@ -143,7 +143,13 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       setDocuments(updatedDocs);
       setFolders(updatedFolders);
 
-      if (onRefreshLabs && totalExtractedMetrics > 0) {
+      try {
+        await api.reparseLabs(patient.id);
+      } catch (e) {
+        console.error("Auto reparse labs warning:", e);
+      }
+
+      if (onRefreshLabs) {
         onRefreshLabs();
       }
     } catch (err: any) {
@@ -162,6 +168,14 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       setDocuments((prev) => prev.filter((d) => d.id !== docId));
       const fList = await api.getFolders(patient.id);
       setFolders(fList);
+      try {
+        await api.reparseLabs(patient.id);
+      } catch (e) {
+        console.error("Auto reparse labs warning:", e);
+      }
+      if (onRefreshLabs) {
+        onRefreshLabs();
+      }
     } catch (err: any) {
       alert((language === "ru" ? "Ошибка удаления: " : "Delete error: ") + (err.message || err));
     }

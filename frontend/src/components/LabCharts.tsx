@@ -90,6 +90,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       description: t.labs.panels.cbc.description,
       matchPatterns: [
         "Гемоглобин", "Эритроциты", "Лейкоциты", "Тромбоциты", "Гематокрит", "СОЭ",
+        "MCV", "MCH", "MCHC", "RDW",
         "Hemoglobin", "RBC", "WBC", "Platelet", "Hematocrit", "ESR"
       ],
     },
@@ -103,9 +104,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       matchPatterns: [
         "Глюкоза", "Креатинин", "Мочевина", "eGFR", "АЛТ", "АСТ", 
         "Щелочная фосфатаза", "билирубин", "Общий белок", "Альбумин", 
-        "Натрий", "Калий", "Хлориды", "Кальций",
+        "Натрий", "Калий", "Хлориды", "Кальций", "Мочевая кислота",
         "Glucose", "Creatinine", "BUN", "ALT", "AST", "ALP", "Bilirubin", 
-        "Protein", "Albumin", "Sodium", "Potassium", "Chloride", "Calcium"
+        "Protein", "Albumin", "Sodium", "Potassium", "Chloride", "Calcium", "Uric"
       ],
     },
     {
@@ -137,7 +138,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       goal: t.labs.panels.urinalysis.goal,
       description: t.labs.panels.urinalysis.description,
       matchPatterns: [
-        "мочи", "Относительная плотность", "Белок в моче",
+        "мочи", "Относительная плотность", "Белок в моче", "pH",
         "Urine", "Specific Gravity", "Urinalysis"
       ],
     },
@@ -149,7 +150,7 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       goal: t.labs.panels.other.goal,
       description: t.labs.panels.other.description,
       matchPatterns: [
-        "Ферритин", "Витамин", "СРБ", "Мочевая кислота", "ТТГ", "Т4",
+        "Ферритин", "Витамин", "СРБ", "Мочевая кислота", "ТТГ", "Т4", "ПСА", "PSA",
         "Ferritin", "Vitamin", "CRP", "Uric", "TSH", "FT4"
       ],
     },

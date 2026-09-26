@@ -231,7 +231,13 @@ async def upload_document(
     patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
     p_age = patient.age if (patient and patient.age) else 50
     p_gender = patient.gender if (patient and patient.gender) else "male"
-    extracted_metrics = parse_lab_metrics(text_content, default_date=today_str, patient_age=p_age, patient_gender=p_gender)
+    extracted_metrics = parse_lab_metrics(
+        text_content,
+        default_date=today_str,
+        patient_age=p_age,
+        patient_gender=p_gender,
+        filename=file.filename
+    )
     added_metrics_count = 0
     for m in extracted_metrics:
         lab_m = models.LabMetric(
@@ -386,7 +392,8 @@ def reparse_patient_labs(patient_id: int, db: Session = Depends(get_db)):
             doc.extracted_text,
             default_date=doc_date,
             patient_age=patient.age or 50,
-            patient_gender=patient.gender or "male"
+            patient_gender=patient.gender or "male",
+            filename=doc.filename
         )
         for m in metrics:
             key = (m["metric_name"], m["record_date"], round(m["value"], 3))
