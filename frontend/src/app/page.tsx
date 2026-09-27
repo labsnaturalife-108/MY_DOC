@@ -380,6 +380,7 @@ export default function Home() {
                   }
                   setActiveTab("chat");
                 }}
+                onStartNewChatWithQuery={handleStartNewChatWithQuery}
               />
             )}
           </div>

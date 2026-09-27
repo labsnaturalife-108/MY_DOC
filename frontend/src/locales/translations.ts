@@ -369,6 +369,8 @@ export const translations = {
       glucoseMonitoring: "Контроль уровня гликемии натощак и через 2 часа после еды при метаболических рисках",
       askAiButton: "Разработать пошаговую программу привычек с AI-доктором",
       askAiPrefill: "Пожалуйста, составь для меня персональную программу здорового образа жизни (режим активности, гидратации, сна и снижение стресса) с учетом моих диагнозов и анализов.",
+      savePdfBtn: "Сохранить в PDF",
+      savePdfTooltip: "Сохранить персональную программу образа жизни в PDF / Распечатать",
     },
   },
   en: {
@@ -739,6 +741,8 @@ export const translations = {
       glucoseMonitoring: "Fasting and 2-hour postprandial blood glucose checks for metabolic risk control",
       askAiButton: "Create Personalized Habit Plan with AI Doctor",
       askAiPrefill: "Please create a personalized healthy lifestyle protocol for me (activity, hydration, sleep, stress reduction) taking into account my medical diagnoses and laboratory results.",
+      savePdfBtn: "Save to PDF",
+      savePdfTooltip: "Save personalized lifestyle protocol to PDF / Print",
     },
   },
 };
