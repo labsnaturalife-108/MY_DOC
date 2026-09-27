@@ -483,8 +483,8 @@ Please respect my dietary pattern strictly.`;
             <div className="space-y-4">
               {/* 1. Protein Section tailored to diet */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.proteins}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -519,16 +519,16 @@ Please respect my dietary pattern strictly.`;
 
                   {dietType === "vegetarian" && (
                     <>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Творог 2–5% натуральный (казеиновый белок, кальций)" : "Natural cottage cheese 2–5% (casein & calcium)"}
                       </span>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Греческий йогурт без сахара, простокваша, ацидофилин" : "Plain Greek yogurt, kefir & acidophilus"}
                       </span>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Сыры с низкой соленостью: адыгейский, моцарелла, рикотта" : "Low-sodium cheeses: paneer, fresh mozzarella, ricotta"}
                       </span>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Пармезан выдержанный (20–30г — источник биодоступного кальция)" : "Aged Parmesan (20–30g — bioavailable calcium)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
@@ -551,10 +551,10 @@ Please respect my dietary pattern strictly.`;
 
                   {dietType === "vegan" && (
                     <>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-100 border border-teal-300 dark:border-teal-700">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Тофу органический, ферментированный темпе, бобы эдамаме" : "Organic tofu, fermented tempeh, edamame"}
                       </span>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-100 border border-teal-300 dark:border-teal-700">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Чечевица всех видов: красная, зеленая, черная (до 18г белка на порцию)" : "Lentils: red, green, black (up to 18g protein/serving)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
@@ -585,8 +585,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* 2. Vegetables & Greens */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Salad className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Salad className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.vegetables}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -631,8 +631,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* 3. Complex Carbs & Grains */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Wheat className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Wheat className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.carbs}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -668,8 +668,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* 4. Berries & Low-GI Fruits */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Apple className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Apple className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.fruits}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -702,8 +702,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* 5. Healthy Fats, Nuts & Seeds */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Droplet className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Droplet className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.fats}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -739,8 +739,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* 6. Fermented Foods & Probiotics */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.fermented}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -767,8 +767,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* 7. Anti-Inflammatory Herbs, Spices & Teas */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Coffee className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {t.nutrition.categories.herbs}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
@@ -811,8 +811,8 @@ Please respect my dietary pattern strictly.`;
               {/* Diet-specific restrictions */}
               {dietType === "vegetarian" && (
                 <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                     {language === "ru" ? "Вегетарианские продукты, требующие ограничения при ваших показателях:" : "Vegetarian foods to limit based on your clinical profile:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
@@ -837,8 +837,8 @@ Please respect my dietary pattern strictly.`;
 
               {dietType === "vegan" && (
                 <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                     {language === "ru" ? "Веганские продукты, требующие ограничения при ваших показателях:" : "Vegan foods to limit based on your clinical profile:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
@@ -866,8 +866,8 @@ Please respect my dietary pattern strictly.`;
 
               {dietType === "omnivore" && (
                 <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                     {language === "ru" ? "Ультра-обработанные мясные продукты:" : "Ultra-processed meat products:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
@@ -889,8 +889,8 @@ Please respect my dietary pattern strictly.`;
 
               {/* General Metabolic & Cardiovascular Restrictions */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                   {language === "ru" ? "Продукты с высоким кардио-метаболическим риском:" : "High cardio-metabolic risk foods:"}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
