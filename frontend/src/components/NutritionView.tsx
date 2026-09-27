@@ -20,7 +20,10 @@ import {
   ChevronRight,
   Milk,
   Beef,
-  Leaf
+  Leaf,
+  Wheat,
+  Fish,
+  Coffee
 } from "lucide-react";
 import { Patient, LabMetric, api } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
@@ -478,7 +481,7 @@ Please respect my dietary pattern strictly.`;
             </div>
 
             <div className="space-y-4">
-              {/* Protein Section tailored to diet */}
+              {/* 1. Protein Section tailored to diet */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5" />
@@ -488,16 +491,28 @@ Please respect my dietary pattern strictly.`;
                   {dietType === "omnivore" && (
                     <>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Дикая морская рыба (лосось, скумбрия, треска)" : "Wild ocean fish (salmon, mackerel, cod)"}
+                        {language === "ru" ? "Дикая морская рыба: лосось, треска, минтай, скумбрия (омега-3 для эндотелия)" : "Wild ocean fish: salmon, cod, pollock, mackerel (EPA/DHA for endothelium)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Филе индейки и куриная грудка" : "Turkey breast and chicken fillet"}
+                        {language === "ru" ? "Филе индейки и куриная грудка без кожи (постный белок)" : "Skinless turkey and chicken breast (lean protein)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Яйца (1-2 в день)" : "Eggs (1-2/day)"}
+                        {language === "ru" ? "Постная телятина и мясо кролика (минимум насыщенных жиров)" : "Lean veal and rabbit meat (low saturated fat)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Чечевица, нут, фасоль" : "Lentils, chickpeas, black beans"}
+                        {language === "ru" ? "Куриные и перепелиные яйца пашот / всмятку (холин и лецитин)" : "Poached / soft-boiled eggs (choline & lecithin)"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Красная и зеленая чечевица, маш (растительный белок и клетчатка)" : "Red & green lentils, mung beans (fiber & plant protein)"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Нут и натуральный хумус с тахини" : "Chickpeas & natural hummus with tahini"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Органический тофу и темпе" : "Organic tofu & tempeh"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Изолят горохового или сывороточного протеина (без сахара)" : "Pea or whey protein isolate (sugar-free)"}
                       </span>
                     </>
                   )}
@@ -505,25 +520,31 @@ Please respect my dietary pattern strictly.`;
                   {dietType === "vegetarian" && (
                     <>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
-                        {language === "ru" ? "Творог 2-5% натуральный" : "Natural cottage cheese (2-5%)"}
+                        {language === "ru" ? "Творог 2–5% натуральный (казеиновый белок, кальций)" : "Natural cottage cheese 2–5% (casein & calcium)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
-                        {language === "ru" ? "Греческий йогурт без сахара" : "Sugar-free Greek yogurt"}
+                        {language === "ru" ? "Греческий йогурт без сахара, простокваша, ацидофилин" : "Plain Greek yogurt, kefir & acidophilus"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
-                        {language === "ru" ? "Сыры (моцарелла, пармезан, адыгейский)" : "Cheeses (mozzarella, parmesan, paneer)"}
+                        {language === "ru" ? "Сыры с низкой соленостью: адыгейский, моцарелла, рикотта" : "Low-sodium cheeses: paneer, fresh mozzarella, ricotta"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
+                        {language === "ru" ? "Пармезан выдержанный (20–30г — источник биодоступного кальция)" : "Aged Parmesan (20–30g — bioavailable calcium)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Красная и зеленая чечевица" : "Red & green lentils"}
+                        {language === "ru" ? "Чечевица: красная, зеленая, черная белуга (до 24г белка)" : "Lentils: red, green, black beluga (up to 24g protein)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Нут и хумус" : "Chickpeas and hummus"}
+                        {language === "ru" ? "Нут, маш и фасоль (предварительно вымоченные)" : "Chickpeas, mung & kidney beans (pre-soaked)"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Хумус натуральный с кунжутной пастой тахини" : "Natural hummus with sesame tahini"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                         {language === "ru" ? "Органический тофу и темпе" : "Organic tofu & tempeh"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Конопляный и гороховый протеин" : "Hemp & pea protein"}
+                        {language === "ru" ? "Изолят конопляного, тыквенного и горохового протеина" : "Hemp, pumpkin & pea protein isolate"}
                       </span>
                     </>
                   )}
@@ -531,29 +552,38 @@ Please respect my dietary pattern strictly.`;
                   {dietType === "vegan" && (
                     <>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-100 border border-teal-300 dark:border-teal-700">
-                        {language === "ru" ? "Тофу, темпе, эдамаме" : "Tofu, tempeh, edamame"}
+                        {language === "ru" ? "Тофу органический, ферментированный темпе, бобы эдамаме" : "Organic tofu, fermented tempeh, edamame"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-900 dark:text-teal-100 border border-teal-300 dark:border-teal-700">
-                        {language === "ru" ? "Чечевица (до 18г белка на порцию)" : "Lentils (up to 18g protein/serving)"}
+                        {language === "ru" ? "Чечевица всех видов: красная, зеленая, черная (до 18г белка на порцию)" : "Lentils: red, green, black (up to 18g protein/serving)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Нут, черная и белая фасоль" : "Chickpeas, black & kidney beans"}
+                        {language === "ru" ? "Нут, маш, черная и белая фасоль (с вымачиванием)" : "Chickpeas, mung, black & white beans (pre-soaked)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Сейтан (пшеничный белок)" : "Seitan (wheat gluten protein)"}
+                        {language === "ru" ? "Сейтан домашний (чистый пшеничный глютеновый белок)" : "Homemade seitan (pure wheat gluten protein)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Очищенные семена конопли и тыквы" : "Hemp & pumpkin seeds"}
+                        {language === "ru" ? "Очищенные семена конопли (все 9 незаменимых аминокислот)" : "Hemp hearts (all 9 essential amino acids)"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Семена кунжута и тахини (кальций и белок)" : "Sesame seeds & tahini (calcium & protein)"}
+                        {language === "ru" ? "Семена тыквы и подсолнечника (цинк, магний, аргинин)" : "Pumpkin & sunflower seeds (zinc, magnesium, arginine)"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Семена кунжута и паста тахини (кальций и растительный белок)" : "Sesame seeds & tahini paste (calcium & protein)"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Урбеч из льна или конопли (без добавленного сахара)" : "Raw flax or hemp seed paste (sugar-free)"}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                        {language === "ru" ? "Изолят горохового и рисового протеина (чистый аминопрофиль)" : "Pea & brown rice protein isolate (clean amino profile)"}
                       </span>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Vegetables & Greens */}
+              {/* 2. Vegetables & Greens */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
                   <Salad className="w-3.5 h-3.5" />
@@ -561,43 +591,116 @@ Please respect my dietary pattern strictly.`;
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Руккола, кейл, салат романо, айсберг" : "Arugula, kale, romaine & iceberg lettuce"}
+                    {language === "ru" ? "Руккола, кейл, салат романо, айсберг, листовой латук" : "Arugula, kale, romaine, iceberg & leaf lettuce"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Брокколи, цветная капуста, кабачки" : "Broccoli, cauliflower, zucchini"}
+                    {language === "ru" ? "Пекинская и китайская капуста (пак-чой)" : "Napa cabbage & bok choy"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Огурцы, болгарский перец, сельдерей" : "Cucumbers, bell peppers, celery"}
+                    {language === "ru" ? "Брокколи и цветная капуста (сульфорафан для сосудов)" : "Broccoli & cauliflower (sulforaphane for vessels)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Томаты (источник ликопина)" : "Tomatoes (lycopene source)"}
+                    {language === "ru" ? "Кабачки, цукини и патиссоны (легко усваиваются, поддержка почек)" : "Zucchini, summer squash & pattypan (kidney-friendly)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Огурцы грунтовые (гидратация и калий)" : "Fresh cucumbers (hydration & potassium)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Болгарский перец всех цветов (чемпион по витамину C)" : "Bell peppers all colors (high vitamin C)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Томаты спелые (источник антиоксиданта ликопина)" : "Ripe tomatoes (lycopene antioxidant)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Стеблевой сельдерей и фенхель (фталиды снижают тонус артерий)" : "Celery stalks & fennel (phthalides for arterial tone)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Тыква запеченная и морковь (бета-каротин и калий)" : "Baked pumpkin & carrots (beta-carotene & potassium)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Артишоки и запеченные баклажаны (пектин и гепатопротекция)" : "Artichokes & roasted eggplant (liver & vascular support)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Свежая пряная зелень: укроп, петрушка, кинза, базилик" : "Fresh herbs: dill, parsley, cilantro, basil"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Редис, дайкон, репа и кольраби (растительные волокна)" : "Radish, daikon, turnips & kohlrabi (dietary fiber)"}
                   </span>
                 </div>
               </div>
 
-              {/* Complex Carbs */}
+              {/* 3. Complex Carbs & Grains */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
-                  <Apple className="w-3.5 h-3.5" />
+                  <Wheat className="w-3.5 h-3.5" />
                   {t.nutrition.categories.carbs}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Гречневая крупа, киноа, бурый рис" : "Buckwheat, quinoa, brown rice"}
+                    {language === "ru" ? "Гречневая крупа: зеленая и ядрица (рутин укрепляет капилляры)" : "Buckwheat: green & roasted (rutin capillary support)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Овсяные хлопья долгой варки" : "Rolled whole oats"}
+                    {language === "ru" ? "Киноа: белая, красная, трехцветная (низкий ГИ, без глютена)" : "Quinoa: white, red, tricolor (low GI, gluten-free)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Батат, печеный картофель в кожуре" : "Sweet potato, baked potatoes"}
+                    {language === "ru" ? "Бурый, дикий и красный рис (оболочка богата магнием и витаминами B)" : "Brown, wild & red rice (magnesium & B-vitamins)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Ягоды (черника, малина, брусника)" : "Berries (blueberries, raspberries)"}
+                    {language === "ru" ? "Овсяные хлопья долгой варки (15–20 мин) (бета-глюкан снижает ЛПНП)" : "Rolled whole oats (15-20m) (beta-glucan lowers LDL)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Полба (спельта), перловая крупа и ячмень (медленные углеводы)" : "Spelt, pearl barley & whole barley (slow carbs)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Булгур из твердых сортов пшеницы (низкий гликемический индекс)" : "Whole grain bulgur (low glycemic index)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Батат и печеный картофель в кожуре (калий для кардиомиоцитов)" : "Sweet potato & jacket baked potato (potassium for heart)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Цельнозерновой бездрожжевой хлеб на ржаной закваске" : "100% whole grain sourdough rye bread"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Паста из твердых сортов пшеницы al dente или гречневая соба" : "Durum wheat pasta al dente or 100% buckwheat soba"}
                   </span>
                 </div>
               </div>
 
-              {/* Healthy Fats */}
+              {/* 4. Berries & Low-GI Fruits */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
+                  <Apple className="w-3.5 h-3.5" />
+                  {t.nutrition.categories.fruits}
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Черника, голубика, брусника (антоцианы защищают сосудистую стенку)" : "Blueberries, wild bilberries, lingonberries (endothelial anthocyanins)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Малина, ежевика, клубника (высокое содержание клетчатки и эллаговой кислоты)" : "Raspberries, blackberries, strawberries (ellagic acid & fiber)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Вишня и черешня (доказано снижают уровень мочевой кислоты в крови)" : "Tart cherries & sweet cherries (clinically reduce serum uric acid)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Зеленые яблоки (пектин связывает и выводит избыточный холестерин)" : "Crisp green apples (soluble pectin binds excess cholesterol)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Гранат и свежие зерна граната (пуникалагин препятствует окислению ЛПНП)" : "Pomegranate seeds (punicalagins inhibit LDL oxidation)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Груши, сливы и абрикосы (растворимая клетчатка для микробиоты)" : "Pears, plums & fresh apricots (gut microbiota prebiotic fiber)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Грейпфрут, апельсины, лимонный сок (витамин C и цитраты против камней в почках)" : "Grapefruit, oranges & lemon juice (citrates protect kidneys)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Киви (1–2 плода в день поддерживают липидный профиль и моторику ЖКТ)" : "Kiwi fruit (1-2 daily supports lipid profile & motility)"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 5. Healthy Fats, Nuts & Seeds */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
                   <Droplet className="w-3.5 h-3.5" />
@@ -605,13 +708,90 @@ Please respect my dietary pattern strictly.`;
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Оливковое масло первого отжима Extra Virgin" : "Extra virgin olive oil"}
+                    {language === "ru" ? "Оливковое масло Extra Virgin первого холодного отжима (EVOO с высоким полифенолом)" : "Extra virgin cold-pressed olive oil (high-polyphenol EVOO)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Авокадо (мононенасыщенные жиры)" : "Avocado (monounsaturated fats)"}
+                    {language === "ru" ? "Свежее авокадо и масло авокадо (мононенасыщенная олеиновая кислота Омега-9)" : "Fresh avocado & avocado oil (Omega-9 oleic acid)"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Грецкие орехи, миндаль, семена льна и чиа" : "Walnuts, almonds, flax & chia seeds"}
+                    {language === "ru" ? "Грецкие орехи (рекордсмен среди орехов по омега-3 АЛК для сосудов)" : "Raw walnuts (highest plant ALA Omega-3 among nuts)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Миндаль сырой (витамин E и магний для эластичности сосудистой стенки)" : "Raw almonds (vitamin E & magnesium for arterial elasticity)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Фундук, кешью и несоленые фисташки (богаты фитостеролами)" : "Hazelnuts, cashews & unsalted pistachios (phytosterols)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Свежемолотые семена льна и льняное масло холодного отжима (растительная омега-3)" : "Freshly ground flaxseeds & cold-pressed flax oil (plant ALA)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Семена чиа (растворимая слизистая клетчатка и омега-3)" : "Chia seeds (soluble mucilage fiber & ALA omega-3)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Очищенные семена тыквы и кунжут (цинк, магний, сезамин)" : "Pumpkin seeds & raw sesame (zinc, magnesium, sesamin)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Рыжиковое масло и масло грецкого ореха холодного отжима" : "Camelina oil & walnut oil (cold-pressed)"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 6. Fermented Foods & Probiotics */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {t.nutrition.categories.fermented}
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Квашеная капуста без сахара (богата лактобактериями и натуральным витамином C)" : "Naturally fermented sauerkraut (no sugar, high vitamin C & lactobacilli)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Натуральный кефир, простокваша, ряженка (живые штаммы бифидо- и лактокультур)" : "Natural kefir, plain buttermilk (live probiotic cultures)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Слабосоленое кимчи ферментированное (поддержка кишечного микробиома)" : "Mild fermented kimchi (gut microbiota & metabolism support)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Органическая мисо-паста из ферментированных бобов (ферменты пищеварения)" : "Organic traditional miso paste (digestive enzymes)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Натуральная комбуча без добавленного сахара (чайный квас для пищеварения)" : "Raw sugar-free kombucha (probiotic fermented tea)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Яблочный нефильтрованный уксус с «маточным осадком» (улучшает метаболизм)" : "Unfiltered raw apple cider vinegar with 'mother' (metabolic enzymes)"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 7. Anti-Inflammatory Herbs, Spices & Teas */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2 flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5" />
+                  {t.nutrition.categories.herbs}
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Куркума с черным перцем (куркумин + пиперин снижают воспаление сосудистой стенки)" : "Turmeric with black pepper (curcumin + piperine reduce vascular inflammation)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Свежий корень имбиря (гингеролы улучшают микроциркуляцию и липиды)" : "Fresh ginger root (gingerols support microcirculation)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Чеснок и репчатый лук (аллицин препятствует окислению липидов и тромбообразованию)" : "Fresh garlic & onions (allicin inhibits platelet aggregation & lipid oxidation)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Розмарин, тимьян, орегано, базилик (высокая концентрация полифенолов)" : "Rosemary, thyme, oregano & basil (high polyphenol herbs)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Зеленый чай листовой и матча (полифенол EGCG — доказанный кардиопротектор)" : "Loose-leaf green tea & ceremonial matcha (EGCG cardiovascular protection)"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Травяные настои: ромашка, мята, мелисса, плоды шиповника, каркаде" : "Herbal teas: chamomile, mint, lemon balm, rosehip & hibiscus"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                    {language === "ru" ? "Минеральная гидрокарбонатная щелочная вода (способствует выведению мочевой кислоты)" : "Alkaline bicarbonate mineral water (assists uric acid excretion)"}
                   </span>
                 </div>
               </div>
