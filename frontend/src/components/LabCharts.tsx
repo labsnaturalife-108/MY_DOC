@@ -1398,15 +1398,15 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
           <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 12, right: 30, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#f4f4f5"} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#cbd5e1"} />
                 <XAxis 
                   dataKey="record_date" 
-                  stroke={isDark ? "#71717a" : "#a1a1aa"} 
+                  stroke={isDark ? "#71717a" : "#475569"} 
                   fontSize={12} 
                   tickLine={false} 
                 />
                 <YAxis 
-                  stroke={isDark ? "#71717a" : "#a1a1aa"} 
+                  stroke={isDark ? "#71717a" : "#475569"} 
                   fontSize={12} 
                   tickLine={false} 
                   domain={["auto", "auto"]} 
@@ -1414,9 +1414,9 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
                 <Tooltip
                   contentStyle={{
                     backgroundColor: isDark ? "#18181b" : "#ffffff",
-                    borderColor: isDark ? "#3f3f46" : "#e4e4e7",
+                    borderColor: isDark ? "#3f3f46" : "#cbd5e1",
                     borderRadius: "0.75rem",
-                    color: isDark ? "#f4f4f5" : "#18181b",
+                    color: isDark ? "#f4f4f5" : "#0f172a",
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                     fontSize: "12px",
                   }}

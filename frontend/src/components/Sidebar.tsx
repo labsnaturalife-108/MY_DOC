@@ -313,7 +313,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     AI MED
                   </span>
                 </h1>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">{t.sidebar.brandTagline}</p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{t.sidebar.brandTagline}</p>
               </div>
             </div>
 
@@ -408,73 +408,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="p-2 border-b border-zinc-200 dark:border-zinc-800/80 grid grid-cols-2 gap-1.5 text-xs">
               <button
                 onClick={() => onSelectTab("chat")}
-                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition whitespace-nowrap ${
                   activeTab === "chat"
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/50 font-medium"
                 }`}
               >
-                <Bot className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <Bot className={`w-3.5 h-3.5 shrink-0 ${activeTab === "chat" ? "text-white dark:text-zinc-950" : "text-zinc-700 dark:text-zinc-400"}`} />
                 <span className="truncate">{t.sidebar.tabs.chat}</span>
               </button>
 
               <button
                 onClick={() => onSelectTab("profile")}
-                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition whitespace-nowrap ${
                   activeTab === "profile"
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/50 font-medium"
                 }`}
               >
-                <User className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <User className={`w-3.5 h-3.5 shrink-0 ${activeTab === "profile" ? "text-white dark:text-zinc-950" : "text-zinc-700 dark:text-zinc-400"}`} />
                 <span className="truncate">{t.sidebar.tabs.profile}</span>
               </button>
 
               <button
                 onClick={() => onSelectTab("folders")}
-                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition whitespace-nowrap ${
                   activeTab === "folders"
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/50 font-medium"
                 }`}
               >
-                <FolderOpen className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <FolderOpen className={`w-3.5 h-3.5 shrink-0 ${activeTab === "folders" ? "text-white dark:text-zinc-950" : "text-zinc-700 dark:text-zinc-400"}`} />
                 <span className="truncate">{t.sidebar.tabs.folders}</span>
               </button>
 
               <button
                 onClick={() => onSelectTab("labs")}
-                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition whitespace-nowrap ${
                   activeTab === "labs"
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/50 font-medium"
                 }`}
               >
-                <LineChart className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <LineChart className={`w-3.5 h-3.5 shrink-0 ${activeTab === "labs" ? "text-white dark:text-zinc-950" : "text-zinc-700 dark:text-zinc-400"}`} />
                 <span className="truncate">{t.sidebar.tabs.labs}</span>
               </button>
 
               <button
                 onClick={() => onSelectTab("nutrition")}
-                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition whitespace-nowrap ${
                   activeTab === "nutrition"
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/50 font-medium"
                 }`}
               >
-                <Utensils className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <Utensils className={`w-3.5 h-3.5 shrink-0 ${activeTab === "nutrition" ? "text-white dark:text-zinc-950" : "text-zinc-700 dark:text-zinc-400"}`} />
                 <span className="truncate">{t.sidebar.tabs.nutrition}</span>
               </button>
 
               <button
                 onClick={() => onSelectTab("lifestyle")}
-                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg font-medium transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg transition whitespace-nowrap ${
                   activeTab === "lifestyle"
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/50 font-medium"
                 }`}
               >
-                <Activity className="w-3.5 h-3.5 shrink-0 text-zinc-600 dark:text-zinc-300" />
+                <Activity className={`w-3.5 h-3.5 shrink-0 ${activeTab === "lifestyle" ? "text-white dark:text-zinc-950" : "text-zinc-700 dark:text-zinc-400"}`} />
                 <span className="truncate">{t.sidebar.tabs.lifestyle}</span>
               </button>
 
@@ -482,8 +482,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => onSelectTab("prevent")}
                 className={`col-span-2 flex items-center justify-between px-3 py-2 rounded-lg font-medium transition ${
                   activeTab === "prevent"
-                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-800/70 shadow-sm"
-                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 border border-zinc-250 dark:border-zinc-800/70"
+                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-800/70 shadow-sm font-semibold"
+                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 border border-zinc-250 dark:border-zinc-800/70"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -541,12 +541,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer text-xs transition ${
                     activeSessionId === session.id
-                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 font-medium"
-                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
+                      ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 border border-zinc-400/80 dark:border-zinc-700 font-semibold shadow-2xs"
+                      : "text-zinc-700 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-zinc-800/40 hover:text-zinc-950 dark:hover:text-zinc-200 font-medium"
                   }`}
                 >
                   <div className="flex items-center space-x-2.5 truncate">
-                    <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${activeSessionId === session.id ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                    <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${activeSessionId === session.id ? 'text-zinc-950 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400'}`} />
                     <span className="truncate">{session.title}</span>
                   </div>
                   <button

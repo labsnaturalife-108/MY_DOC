@@ -579,7 +579,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <select
                   value={currentModelId}
                   onChange={(e) => handleModelChange(e.target.value)}
-                  className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 font-semibold text-xs rounded-xl px-2.5 py-1.5 outline-none focus:border-zinc-500 cursor-pointer"
+                  className="bg-white dark:bg-zinc-950 border border-zinc-350 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-bold text-xs rounded-xl px-2.5 py-1.5 outline-none focus:border-zinc-500 cursor-pointer shadow-xs"
                 >
                   {models.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -700,8 +700,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <div
                   className={`max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed shadow-sm ${
                     isUser
-                      ? "bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-750 text-zinc-900 dark:text-zinc-100 rounded-tr-none font-medium whitespace-pre-wrap"
-                      : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none"
+                      ? "bg-zinc-200 dark:bg-zinc-800 border border-zinc-350 dark:border-zinc-750 text-zinc-950 dark:text-zinc-100 rounded-tr-none font-semibold whitespace-pre-wrap shadow-2xs"
+                      : "bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 text-zinc-950 dark:text-zinc-100 rounded-tl-none"
                   }`}
                 >
                   {isUser ? (
@@ -813,7 +813,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               </div>
             </div>
           )}
-          <div className="relative bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 focus-within:border-zinc-400 dark:focus-within:border-zinc-600 rounded-2xl p-2 shadow-lg transition">
+          <div className="relative bg-white dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 focus-within:border-zinc-500 dark:focus-within:border-zinc-600 rounded-2xl p-2 shadow-md transition">
             <textarea
               ref={textareaRef}
               rows={input ? Math.min(6, Math.max(2, input.split("\n").length)) : 2}
@@ -829,7 +829,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             />
 
             <div className="flex items-center justify-between pt-1 px-1">
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
                 {language === "ru" ? "Enter — отправить, Shift+Enter — новая строка" : "Enter to send, Shift+Enter for new line"}
               </span>
 
