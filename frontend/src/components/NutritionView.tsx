@@ -206,7 +206,7 @@ ${hasHighUricAcid ? "- Lab markers: elevated uric acid (strictly restrict purine
 Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch, Dinner, and Healthy Snack, strictly adhering to the ${dietTitleEn} pattern!`;
 
     if (onStartNewChatWithQuery) {
-      onStartNewChatWithQuery(query, sessionTitle, true);
+      onStartNewChatWithQuery(query, sessionTitle, false);
     } else if (onNavigateToChat) {
       onNavigateToChat(query);
     }
@@ -258,7 +258,7 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
                   ? (language === "ru" ? "Веган (100% растительный)" : "Vegan (Plant-based)")
                   : (language === "ru" ? "Всеядный" : "Omnivore")}
               </span>
-              <span>• {language === "ru" ? "создастся новый диалог" : "creates new dialogue"}</span>
+              <span>• {language === "ru" ? "откроется диалог с готовым запросом" : "opens dialogue with prompt"}</span>
             </span>
           </div>
           <ChevronRight className="w-4 h-4 ml-1 text-emerald-600 dark:text-emerald-400 shrink-0" />

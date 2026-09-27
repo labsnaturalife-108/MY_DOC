@@ -125,7 +125,7 @@ export default function Home() {
     }
   };
 
-  const handleStartNewChatWithQuery = async (query: string, title?: string, autoSend: boolean = true) => {
+  const handleStartNewChatWithQuery = async (query: string, title?: string, autoSend: boolean = false) => {
     if (!activePatient) return;
     try {
       const defaultTitle = (language === "ru" ? "Консультация " : "Consultation ") + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

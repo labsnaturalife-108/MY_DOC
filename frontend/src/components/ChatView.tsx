@@ -49,7 +49,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 }) => {
   const { language, t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(prefillQuery || "");
   const [models, setModels] = useState<AIModel[]>([]);
   const [currentModelId, setCurrentModelId] = useState(session.model_id);
   const [streaming, setStreaming] = useState(false);
@@ -65,6 +65,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,6 +85,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
     if (prefillQuery) {
       setInput(prefillQuery);
       onClearPrefill?.();
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
     }
   }, [prefillQuery]);
 
@@ -797,9 +801,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
         {/* Input box */}
         <div className="mt-4 pt-2 shrink-0">
+          {input.trim() && messages.length === 0 && (
+            <div className="mb-2 px-3 py-2 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-sm flex items-center justify-between text-xs text-emerald-900 dark:text-emerald-200 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-500 dark:text-yellow-400 shrink-0" />
+                <span>
+                  {language === "ru"
+                    ? "Запрос на меню подготовлен. Выберите модель врача вверху (если нужно) и нажмите «Отправить» или Enter"
+                    : "Meal plan prompt is ready. Choose doctor model above (if needed) and click 'Send' or press Enter"}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="relative bg-white dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-800 focus-within:border-zinc-400 dark:focus-within:border-zinc-600 rounded-2xl p-2 shadow-lg transition">
             <textarea
-              rows={2}
+              ref={textareaRef}
+              rows={input ? Math.min(6, Math.max(2, input.split("\n").length)) : 2}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -808,7 +825,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   ? `Спросите доктора о здоровье ${patient.full_name.split(" ")[0]}...`
                   : `Ask doctor regarding health of ${patient.full_name.split(" ")[0]}...`
               }
-              className="w-full bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 text-xs sm:text-sm outline-none resize-none px-2 py-1"
+              className="w-full bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 text-xs sm:text-sm outline-none resize-none px-2 py-1 max-h-48 overflow-y-auto"
             />
 
             <div className="flex items-center justify-between pt-1 px-1">
@@ -819,9 +836,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || streaming}
-                className="p-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white dark:text-zinc-950 rounded-xl shadow transition disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white dark:text-zinc-950 text-xs font-semibold rounded-xl shadow transition disabled:opacity-40 cursor-pointer"
               >
-                <Send className="w-4 h-4" />
+                <span>{language === "ru" ? "Отправить" : "Send"}</span>
+                <Send className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
