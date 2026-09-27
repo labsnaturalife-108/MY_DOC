@@ -231,11 +231,11 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
 
         <button
           onClick={handleConsultAi}
-          className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-emerald-600/25 transition-all hover:scale-[1.01] shrink-0"
+          className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl text-sm font-semibold border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-950 dark:text-emerald-100 backdrop-blur-md shadow-sm transition-all hover:scale-[1.01] shrink-0"
         >
-          <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse shrink-0" />
+          <Sparkles className="w-5 h-5 text-yellow-500 dark:text-yellow-400 shrink-0" />
           <div className="flex flex-col text-left">
-            <span className="font-bold text-sm leading-tight">
+            <span className="font-bold text-sm leading-tight text-emerald-900 dark:text-emerald-200">
               {language === "ru" 
                 ? (dietType === "vegetarian" 
                     ? "Составить Вегетарианское меню на неделю" 
@@ -248,10 +248,10 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
                     ? "Generate Vegan Weekly Meal Plan" 
                     : "Generate Balanced Weekly Meal Plan")}
             </span>
-            <span className="text-[11px] font-normal text-emerald-100 flex items-center gap-1.5 mt-0.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-yellow-300" />
+            <span className="text-[11px] font-normal text-emerald-700/80 dark:text-emerald-300/80 flex items-center gap-1.5 mt-0.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
               <span>{language === "ru" ? "Режим:" : "Diet:"}</span>
-              <span className="font-bold underline decoration-yellow-300">
+              <span className="font-bold underline decoration-emerald-500/40">
                 {dietType === "vegetarian" 
                   ? (language === "ru" ? "Вегетарианец (Лакто)" : "Vegetarian (Lacto)")
                   : dietType === "vegan"
@@ -261,7 +261,7 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
               <span>• {language === "ru" ? "создастся новый диалог" : "creates new dialogue"}</span>
             </span>
           </div>
-          <ChevronRight className="w-4 h-4 ml-1 opacity-80 shrink-0" />
+          <ChevronRight className="w-4 h-4 ml-1 text-emerald-600 dark:text-emerald-400 shrink-0" />
         </button>
       </div>
 
@@ -280,29 +280,29 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
           {/* 1. Omnivore */}
           <button
             onClick={() => handleSelectDiet("omnivore")}
-            className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
+            className={`flex flex-col text-left p-4 rounded-xl border transition-all relative ${
               dietType === "omnivore"
-                ? "bg-blue-600 text-white dark:bg-blue-700 dark:text-white border-2 border-blue-400 dark:border-blue-300 shadow-lg shadow-blue-600/25 ring-4 ring-blue-500/20"
-                : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
+                ? "bg-blue-500/10 dark:bg-blue-500/15 border-2 border-blue-500/60 dark:border-blue-400/50 shadow-sm ring-2 ring-blue-500/20 backdrop-blur-sm"
+                : "bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Beef className={`w-5 h-5 ${dietType === "omnivore" ? "text-blue-100" : "text-blue-600 dark:text-blue-400"}`} />
-                <span className="font-bold text-sm">{t.nutrition.dietTypes.omnivore}</span>
+                <Beef className={`w-5 h-5 ${dietType === "omnivore" ? "text-blue-600 dark:text-blue-400" : "text-zinc-400 dark:text-zinc-500"}`} />
+                <span className={`font-bold text-sm ${dietType === "omnivore" ? "text-blue-950 dark:text-blue-100" : "text-zinc-800 dark:text-zinc-200"}`}>{t.nutrition.dietTypes.omnivore}</span>
               </div>
               {dietType === "omnivore" ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-blue-900 shadow-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-500/15 dark:bg-blue-400/20 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
                   {language === "ru" ? "✓ ВЫБРАНО" : "✓ SELECTED"}
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/80 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/60 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60">
                   {t.nutrition.dietTypes.omnivoreBadge}
                 </span>
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "omnivore" ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "omnivore" ? "text-blue-900/80 dark:text-blue-200/80" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.omnivoreDesc}
             </p>
           </button>
@@ -310,29 +310,29 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
           {/* 2. Vegetarian (Lacto-vegetarian) */}
           <button
             onClick={() => handleSelectDiet("vegetarian")}
-            className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
+            className={`flex flex-col text-left p-4 rounded-xl border transition-all relative ${
               dietType === "vegetarian"
-                ? "bg-emerald-600 text-white dark:bg-emerald-700 dark:text-white border-2 border-emerald-400 dark:border-emerald-300 shadow-lg shadow-emerald-600/25 ring-4 ring-emerald-500/20"
-                : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
+                ? "bg-emerald-500/10 dark:bg-emerald-500/15 border-2 border-emerald-500/60 dark:border-emerald-400/50 shadow-sm ring-2 ring-emerald-500/20 backdrop-blur-sm"
+                : "bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Milk className={`w-5 h-5 ${dietType === "vegetarian" ? "text-emerald-100" : "text-emerald-600 dark:text-emerald-400"}`} />
-                <span className="font-bold text-sm">{t.nutrition.dietTypes.vegetarian}</span>
+                <Milk className={`w-5 h-5 ${dietType === "vegetarian" ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400 dark:text-zinc-500"}`} />
+                <span className={`font-bold text-sm ${dietType === "vegetarian" ? "text-emerald-950 dark:text-emerald-100" : "text-zinc-800 dark:text-zinc-200"}`}>{t.nutrition.dietTypes.vegetarian}</span>
               </div>
               {dietType === "vegetarian" ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-emerald-900 shadow-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 dark:bg-emerald-400/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                   {language === "ru" ? "✓ ВЫБРАНО" : "✓ SELECTED"}
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/80 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/60 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60">
                   {t.nutrition.dietTypes.vegetarianBadge}
                 </span>
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "vegetarian" ? "text-emerald-100" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "vegetarian" ? "text-emerald-900/80 dark:text-emerald-200/80" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.vegetarianDesc}
             </p>
           </button>
@@ -340,29 +340,29 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
           {/* 3. Vegan */}
           <button
             onClick={() => handleSelectDiet("vegan")}
-            className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
+            className={`flex flex-col text-left p-4 rounded-xl border transition-all relative ${
               dietType === "vegan"
-                ? "bg-teal-600 text-white dark:bg-teal-700 dark:text-white border-2 border-teal-400 dark:border-teal-300 shadow-lg shadow-teal-600/25 ring-4 ring-teal-500/20"
-                : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
+                ? "bg-teal-500/10 dark:bg-teal-500/15 border-2 border-teal-500/60 dark:border-teal-400/50 shadow-sm ring-2 ring-teal-500/20 backdrop-blur-sm"
+                : "bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Leaf className={`w-5 h-5 ${dietType === "vegan" ? "text-teal-100" : "text-teal-600 dark:text-teal-400"}`} />
-                <span className="font-bold text-sm">{t.nutrition.dietTypes.vegan}</span>
+                <Leaf className={`w-5 h-5 ${dietType === "vegan" ? "text-teal-600 dark:text-teal-400" : "text-zinc-400 dark:text-zinc-500"}`} />
+                <span className={`font-bold text-sm ${dietType === "vegan" ? "text-teal-950 dark:text-teal-100" : "text-zinc-800 dark:text-zinc-200"}`}>{t.nutrition.dietTypes.vegan}</span>
               </div>
               {dietType === "vegan" ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-teal-900 shadow-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-pulse" />
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-teal-500/15 dark:bg-teal-400/20 text-teal-700 dark:text-teal-300 border border-teal-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500 dark:bg-teal-400" />
                   {language === "ru" ? "✓ ВЫБРАНО" : "✓ SELECTED"}
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/80 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/60 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60">
                   {t.nutrition.dietTypes.veganBadge}
                 </span>
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "vegan" ? "text-teal-100" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "vegan" ? "text-teal-900/80 dark:text-teal-200/80" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.veganDesc}
             </p>
           </button>
@@ -379,15 +379,15 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
           </div>
           <button
             onClick={handleConsultAi}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm transition"
           >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+            <Sparkles className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400" />
             <span>
               {language === "ru" 
                 ? (dietType === "vegetarian" ? "Создать вегетарианское меню с AI-доктором" : dietType === "vegan" ? "Создать веганское меню с AI-доктором" : "Создать сбалансированное меню с AI-доктором")
                 : (dietType === "vegetarian" ? "Generate Vegetarian Meal Plan" : dietType === "vegan" ? "Generate Vegan Meal Plan" : "Generate Balanced Meal Plan")}
             </span>
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           </button>
         </div>
 
