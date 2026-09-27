@@ -22,7 +22,7 @@ trap cleanup SIGINT SIGTERM EXIT
 
 # 2. Запуск бэкенда (FastAPI)
 echo "⚙️  Запуск бэкенда..."
-"$PROJECT_DIR/backend/venv/bin/uvicorn" backend.main:app --host 127.0.0.1 --port 8000 --log-level warning &
+"$PROJECT_DIR/backend/venv/bin/uvicorn" backend.main:app --host 127.0.0.1 --port 8000 --reload --log-level warning &
 BACKEND_PID=$!
 
 # 3. Запуск фронтенда (Next.js)

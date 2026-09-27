@@ -28,6 +28,7 @@ export default function Home() {
   const [isLocalOnline, setIsLocalOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [prefillChatQuery, setPrefillChatQuery] = useState<string>("");
+  const [autoSendChatQuery, setAutoSendChatQuery] = useState<string>("");
 
   // New patient modal state
   const [newPatientData, setNewPatientData] = useState<Partial<Patient>>({
@@ -121,6 +122,29 @@ export default function Home() {
       setActiveTab("chat");
     } catch (err) {
       alert("Ошибка создания диалога: " + err);
+    }
+  };
+
+  const handleStartNewChatWithQuery = async (query: string, title?: string, autoSend: boolean = true) => {
+    if (!activePatient) return;
+    try {
+      const defaultTitle = (language === "ru" ? "Консультация " : "Consultation ") + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const sessionTitle = title || defaultTitle;
+      const newSession = await api.createChatSession(activePatient.id, {
+        title: sessionTitle,
+        model_id: isLocalOnline ? "lmstudio-auto" : "demo-doctor",
+        provider: isLocalOnline ? "lmstudio" : "demo"
+      });
+      setChatSessions((prev) => [newSession, ...prev]);
+      setActiveSessionId(newSession.id);
+      setActiveTab("chat");
+      if (autoSend) {
+        setAutoSendChatQuery(query);
+      } else {
+        setPrefillChatQuery(query);
+      }
+    } catch (err) {
+      alert((language === "ru" ? "Ошибка создания диалога: " : "Error creating consultation: ") + err);
     }
   };
 
@@ -283,6 +307,8 @@ export default function Home() {
                 isLocalOnline={isLocalOnline}
                 prefillQuery={prefillChatQuery}
                 onClearPrefill={() => setPrefillChatQuery("")}
+                autoSendQuery={autoSendChatQuery}
+                onClearAutoSend={() => setAutoSendChatQuery("")}
               />
             )}
 
@@ -336,6 +362,7 @@ export default function Home() {
                   }
                   setActiveTab("chat");
                 }}
+                onStartNewChatWithQuery={handleStartNewChatWithQuery}
               />
             )}
 

@@ -573,11 +573,12 @@ async def stream_chat_message(
     )
     db.add(user_msg)
 
-    # Update session title if first message
+    # Update session title if first message and not already custom
     msg_count = db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session.id).count()
     if msg_count <= 1:
-        clean_title = payload.content[:40] + ("..." if len(payload.content) > 40 else "")
-        session.title = clean_title
+        if not session.title or session.title.startswith("Консультация ") or session.title.startswith("Consultation "):
+            clean_title = payload.content[:40] + ("..." if len(payload.content) > 40 else "")
+            session.title = clean_title
 
     session.updated_at = datetime.utcnow()
     db.commit()

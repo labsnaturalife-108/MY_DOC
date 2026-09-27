@@ -33,6 +33,8 @@ interface ChatViewProps {
   isLocalOnline: boolean;
   prefillQuery?: string;
   onClearPrefill?: () => void;
+  autoSendQuery?: string;
+  onClearAutoSend?: () => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -42,6 +44,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   isLocalOnline,
   prefillQuery,
   onClearPrefill,
+  autoSendQuery,
+  onClearAutoSend,
 }) => {
   const { language, t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -83,6 +87,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   }, [prefillQuery]);
 
+  useEffect(() => {
+    if (autoSendQuery && !streaming) {
+      const q = autoSendQuery;
+      onClearAutoSend?.();
+      const timer = setTimeout(() => {
+        handleSend(q);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [autoSendQuery, session.id]);
+
   const loadModels = async () => {
     try {
       const data = await api.getModels();
@@ -91,7 +106,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       const autoOption = data.find((m: any) => m.id === "lmstudio-auto" && m.is_online);
       const targetLocal = onlineLM || autoOption;
       
-      if ((session.model_id === "demo-doctor" || currentModelId === "demo-doctor") && targetLocal) {
+      if ((session.model_id === "demo-doctor" || currentModelId === "demo-doctor" || currentModelId === "lmstudio-auto") && targetLocal) {
         setCurrentModelId(targetLocal.id);
         api.updateChatSession(session.id, { model_id: targetLocal.id, provider: targetLocal.provider }).catch(() => {});
       }

@@ -33,11 +33,13 @@ export type DietType = "omnivore" | "vegetarian" | "vegan";
 interface NutritionViewProps {
   patient: Patient;
   onNavigateToChat?: (prefillQuery?: string) => void;
+  onStartNewChatWithQuery?: (query: string, title?: string, autoSend?: boolean) => void;
 }
 
 export const NutritionView: React.FC<NutritionViewProps> = ({
   patient,
   onNavigateToChat,
+  onStartNewChatWithQuery,
 }) => {
   const { language, t } = useLanguage();
   const [dietType, setDietType] = useState<DietType>(() => {
@@ -130,36 +132,82 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
   const hasLowEgfr = latestEgfr && latestEgfr.value < 60;
   const hasHighUricAcid = latestUricAcid && (latestUricAcid.value > 420 || latestUricAcid.status === "high");
 
-  // Chat prefill generator
+  // Chat prefill & auto-create consultation generator
   const handleConsultAi = () => {
-    const dietName = 
-      dietType === "omnivore" 
-        ? (language === "ru" ? "Всеядный" : "Omnivore")
-        : dietType === "vegetarian"
-        ? (language === "ru" ? "Вегетарианец (лакто: ем творог, сыр и йогурт, но не ем яйца, мясо и рыбу)" : "Lacto-vegetarian (consumes dairy, strictly no meat, fish, or eggs)")
-        : (language === "ru" ? "Веган (100% растительный рацион)" : "Vegan (100% plant-based)");
+    let dietTitleRu = "";
+    let dietTitleEn = "";
+    let dietRulesRu = "";
+    let dietRulesEn = "";
+
+    if (dietType === "vegetarian") {
+      dietTitleRu = "ВЕГЕТАРИАНСКИЙ (лакто-вегетарианство)";
+      dietTitleEn = "VEGETARIAN (Lacto-vegetarian)";
+      dietRulesRu = `• ПОЛНОСТЬЮ ИСКЛЮЧЕНЫ: мясо, птица, рыба, морепродукты, яйца.
+• РАЗРЕШЕНЫ И ПРИВЕТСТВУЮТСЯ: натуральные молочные продукты (творог 2–5%, греческий йогурт, кефир, качественные сыры), все виды чечевицы, нут, маш, фасоль, тофу, темпе, цельные злаки, овощи, свежая зелень, орехи, семена и полезные масла.`;
+      dietRulesEn = `• STRICTLY EXCLUDED: meat, poultry, fish, seafood, and eggs.
+• ALLOWED & ENCOURAGED: natural dairy (cottage cheese 2–5%, Greek yogurt, kefir, cheeses), all lentils, chickpeas, mung beans, tofu, tempeh, whole grains, vegetables, fresh greens, nuts, seeds, and healthy oils.`;
+    } else if (dietType === "vegan") {
+      dietTitleRu = "ВЕГАНСКИЙ (100% растительный рацион)";
+      dietTitleEn = "VEGAN (100% plant-based)";
+      dietRulesRu = `• ПОЛНОСТЬЮ ИСКЛЮЧЕНЫ ЛЮБЫЕ ЖИВОТНЫЕ ПРОДУКТЫ: мясо, птица, рыба, яйца, молоко, творог, сыры, мед, животные жиры.
+• РАЗРЕШЕНЫ И ПРИВЕТСТВУЮТСЯ: только растительные источники белка (органический тофу, темпе, бобы эдамаме, чечевица, нут, фасоль, очищенные семена конопли), цельные крупы (киноа, гречка, овес), семена, орехи, овощи, зелень, полезные растительные масла.`;
+      dietRulesEn = `• STRICTLY EXCLUDED: all animal products (meat, poultry, fish, eggs, milk, cottage cheese, cheese, butter, honey, animal fats).
+• ALLOWED & ENCOURAGED: plant-based proteins only (organic tofu, tempeh, edamame, lentils, chickpeas, beans, hemp seeds), whole grains (quinoa, buckwheat, oats), seeds, nuts, vegetables, greens, and healthy plant oils.`;
+    } else {
+      dietTitleRu = "СБАЛАНСИРОВАННЫЙ ВСЕЯДНЫЙ (средиземноморский стиль)";
+      dietTitleEn = "BALANCED OMNIVORE (Mediterranean style)";
+      dietRulesRu = `• ИСКЛЮЧЕНО / ОГРАНИЧЕНО: ультра-обработанные мясные продукты (колбасы, сосиски, копчености), трансжиры, фастфуд, избыток рафинированных сахаров.
+• РАЗРЕШЕНО И ПРИВЕТСТВУЮТСЯ: дикая морская рыба (богатая омега-3), постная птица (индейка, курица), яйца, бобовые, цельные злаки, овощи, ягоды, полезные ненасыщенные жиры (EVOO, авокадо, орехи).`;
+      dietRulesEn = `• EXCLUDED / RESTRICTED: ultra-processed meats (sausages, hot dogs, bacon, deli meats), trans fats, deep-fried food, excess refined sugars.
+• ALLOWED & ENCOURAGED: wild omega-3 rich fish, lean poultry (turkey, chicken), eggs, legumes, whole grains, vegetables, berries, healthy unsaturated fats (EVOO, avocado, nuts).`;
+    }
+
+    const sessionTitle = language === "ru"
+      ? (dietType === "vegetarian" ? "Меню: Вегетарианское (на неделю)" : dietType === "vegan" ? "Меню: Веганское (на неделю)" : "Меню: Сбалансированное (на неделю)")
+      : (dietType === "vegetarian" ? "Menu: Vegetarian (7-day)" : dietType === "vegan" ? "Menu: Vegan (7-day)" : "Menu: Balanced (7-day)");
 
     const query = language === "ru"
       ? `Здравствуйте, доктор! Составьте для меня подробный персонализированный план питания и пример меню на неделю.
-Мой тип рациона: ${dietName}.
-Клинические данные: возраст ${age} лет, пол ${isMale ? "мужской" : "женский"}, рост ${height} см, вес ${weight} кг, ИМТ ${bmi}.
-Суточная норма: ~${targetCalories} ккал (Белки ${targetProteinGrams}г, Жиры ${targetFatGrams}г, Углеводы ${targetCarbsGrams}г).
-${patient.chronic_diseases ? `Диагнозы: ${patient.chronic_diseases}.` : ""}
-${patient.allergies ? `Аллергии/непереносимости: ${patient.allergies}.` : ""}
-${hasElevatedGlucose ? "Обратите внимание: повышен уровень глюкозы крови." : ""}
-${hasElevatedCholesterol ? "Обратите внимание: повышен холестерин/ЛПНП." : ""}
-Учтите правила моего рациона (если лакто-вегетарианец — никаких яиц и рыбы, но приветствуются творог и качественный сыр; если веган — без любых животных продуктов).`
-      : `Hello, Doctor! Please design a detailed personalized nutrition plan and a 7-day meal plan for me.
-My dietary pattern: ${dietName}.
-Clinical profile: age ${age}, gender ${isMale ? "male" : "female"}, height ${height} cm, weight ${weight} kg, BMI ${bmi}.
-Calculated targets: ~${targetCalories} kcal (Proteins ${targetProteinGrams}g, Fats ${targetFatGrams}g, Carbs ${targetCarbsGrams}g).
-${patient.chronic_diseases ? `Diagnoses: ${patient.chronic_diseases}.` : ""}
-${patient.allergies ? `Allergies: ${patient.allergies}.` : ""}
-${hasElevatedGlucose ? "Note: elevated fasting blood glucose." : ""}
-${hasElevatedCholesterol ? "Note: elevated cholesterol/LDL." : ""}
-Please respect my dietary pattern strictly.`;
 
-    if (onNavigateToChat) {
+🥗 Выбранный тип рациона: ${dietTitleRu}
+Правила рациона:
+${dietRulesRu}
+
+📊 Мои клинические данные:
+- Возраст: ${age} лет, пол: ${isMale ? "мужской" : "женский"}, рост: ${height} см, вес: ${weight} кг, ИМТ: ${bmi}.
+- Расчетные целевые нормы: ~${targetCalories} ккал/сутки (Белки: ${targetProteinGrams}г, Жиры: ${targetFatGrams}г, Углеводы: ${targetCarbsGrams}г).
+${patient.chronic_diseases ? `- Диагнозы в анамнезе: ${patient.chronic_diseases}.` : ""}
+${patient.allergies ? `- Аллергии / непереносимости: ${patient.allergies}.` : ""}
+${hasElevatedGlucose ? "- Лабораторные маркеры: повышен уровень глюкозы крови (учитывать гликемический индекс продуктов)." : ""}
+${hasElevatedCholesterol ? "- Лабораторные маркеры: повышен холестерин/ЛПНП (минимизировать насыщенные жиры, исключить трансжиры)." : ""}
+${hasLowEgfr ? "- Лабораторные маркеры: снижена расчетная СКФ (контролировать солевую нагрузку и поддерживать почки)." : ""}
+${hasHighUricAcid ? "- Лабораторные маркеры: повышена мочевая кислота (строго исключить продукты с высокой пуриновой нагрузкой: шпинат, щавель, спаржу, дрожжевые экстракты)." : ""}
+
+Пожалуйста, составьте подробное меню на 7 дней (с понедельника по воскресенье):
+1. Для каждого дня распишите Завтрак, Обед, Ужин и Полезный перекус.
+2. Укажите примерную калорийность каждого приема пищи.
+3. Строго соблюдайте правила выбранного типа рациона (${dietTitleRu})!`
+      : `Hello, Doctor! Please design a detailed personalized nutrition plan and a 7-day meal plan for me.
+
+🥗 Selected Dietary Pattern: ${dietTitleEn}
+Dietary rules:
+${dietRulesEn}
+
+📊 My Clinical Profile:
+- Age: ${age}, Gender: ${isMale ? "Male" : "Female"}, Height: ${height} cm, Weight: ${weight} kg, BMI: ${bmi}.
+- Daily Targets: ~${targetCalories} kcal/day (Proteins: ${targetProteinGrams}g, Fats: ${targetFatGrams}g, Carbs: ${targetCarbsGrams}g).
+${patient.chronic_diseases ? `- Diagnoses: ${patient.chronic_diseases}.` : ""}
+${patient.allergies ? `- Allergies: ${patient.allergies}.` : ""}
+${hasElevatedGlucose ? "- Lab markers: elevated blood glucose (monitor glycemic index)." : ""}
+${hasElevatedCholesterol ? "- Lab markers: elevated cholesterol/LDL (minimize saturated fats)." : ""}
+${hasLowEgfr ? "- Lab markers: reduced eGFR (limit sodium, protect kidneys)." : ""}
+${hasHighUricAcid ? "- Lab markers: elevated uric acid (strictly restrict purines: spinach, sorrel, asparagus)." : ""}
+
+Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch, Dinner, and Healthy Snack, strictly adhering to the ${dietTitleEn} pattern!`;
+
+    if (onStartNewChatWithQuery) {
+      onStartNewChatWithQuery(query, sessionTitle, true);
+    } else if (onNavigateToChat) {
       onNavigateToChat(query);
     }
   };
@@ -183,10 +231,37 @@ Please respect my dietary pattern strictly.`;
 
         <button
           onClick={handleConsultAi}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-emerald-600/20 transition shrink-0"
+          className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-emerald-600/25 transition-all hover:scale-[1.01] shrink-0"
         >
-          <Sparkles className="w-4 h-4" />
-          <span>{t.nutrition.askAiButton}</span>
+          <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse shrink-0" />
+          <div className="flex flex-col text-left">
+            <span className="font-bold text-sm leading-tight">
+              {language === "ru" 
+                ? (dietType === "vegetarian" 
+                    ? "Составить Вегетарианское меню на неделю" 
+                    : dietType === "vegan" 
+                    ? "Составить Веганское меню на неделю" 
+                    : "Составить Сбалансированное меню на неделю")
+                : (dietType === "vegetarian" 
+                    ? "Generate Vegetarian Weekly Meal Plan" 
+                    : dietType === "vegan" 
+                    ? "Generate Vegan Weekly Meal Plan" 
+                    : "Generate Balanced Weekly Meal Plan")}
+            </span>
+            <span className="text-[11px] font-normal text-emerald-100 flex items-center gap-1.5 mt-0.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-yellow-300" />
+              <span>{language === "ru" ? "Режим:" : "Diet:"}</span>
+              <span className="font-bold underline decoration-yellow-300">
+                {dietType === "vegetarian" 
+                  ? (language === "ru" ? "Вегетарианец (Лакто)" : "Vegetarian (Lacto)")
+                  : dietType === "vegan"
+                  ? (language === "ru" ? "Веган (100% растительный)" : "Vegan (Plant-based)")
+                  : (language === "ru" ? "Всеядный" : "Omnivore")}
+              </span>
+              <span>• {language === "ru" ? "создастся новый диалог" : "creates new dialogue"}</span>
+            </span>
+          </div>
+          <ChevronRight className="w-4 h-4 ml-1 opacity-80 shrink-0" />
         </button>
       </div>
 
@@ -207,27 +282,27 @@ Please respect my dietary pattern strictly.`;
             onClick={() => handleSelectDiet("omnivore")}
             className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
               dietType === "omnivore"
-                ? "bg-emerald-900 text-white dark:bg-emerald-950 dark:text-emerald-100 border-emerald-600 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
+                ? "bg-blue-600 text-white dark:bg-blue-700 dark:text-white border-2 border-blue-400 dark:border-blue-300 shadow-lg shadow-blue-600/25 ring-4 ring-blue-500/20"
                 : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Beef className={`w-5 h-5 ${dietType === "omnivore" ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400"}`} />
+                <Beef className={`w-5 h-5 ${dietType === "omnivore" ? "text-blue-100" : "text-blue-600 dark:text-blue-400"}`} />
                 <span className="font-bold text-sm">{t.nutrition.dietTypes.omnivore}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                  dietType === "omnivore" 
-                    ? "bg-emerald-800 text-emerald-100" 
-                    : "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
-                }`}>
+              </div>
+              {dietType === "omnivore" ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-blue-900 shadow-sm flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                  {language === "ru" ? "✓ ВЫБРАНО" : "✓ SELECTED"}
+                </span>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/80 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
                   {t.nutrition.dietTypes.omnivoreBadge}
                 </span>
-              </div>
-              {dietType === "omnivore" && (
-                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "omnivore" ? "text-emerald-200" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "omnivore" ? "text-blue-100" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.omnivoreDesc}
             </p>
           </button>
@@ -237,27 +312,27 @@ Please respect my dietary pattern strictly.`;
             onClick={() => handleSelectDiet("vegetarian")}
             className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
               dietType === "vegetarian"
-                ? "bg-emerald-900 text-white dark:bg-emerald-950 dark:text-emerald-100 border-emerald-600 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
+                ? "bg-emerald-600 text-white dark:bg-emerald-700 dark:text-white border-2 border-emerald-400 dark:border-emerald-300 shadow-lg shadow-emerald-600/25 ring-4 ring-emerald-500/20"
                 : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Milk className={`w-5 h-5 ${dietType === "vegetarian" ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400"}`} />
+                <Milk className={`w-5 h-5 ${dietType === "vegetarian" ? "text-emerald-100" : "text-emerald-600 dark:text-emerald-400"}`} />
                 <span className="font-bold text-sm">{t.nutrition.dietTypes.vegetarian}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                  dietType === "vegetarian" 
-                    ? "bg-emerald-800 text-emerald-100" 
-                    : "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
-                }`}>
+              </div>
+              {dietType === "vegetarian" ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-emerald-900 shadow-sm flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  {language === "ru" ? "✓ ВЫБРАНО" : "✓ SELECTED"}
+                </span>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/80 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
                   {t.nutrition.dietTypes.vegetarianBadge}
                 </span>
-              </div>
-              {dietType === "vegetarian" && (
-                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "vegetarian" ? "text-emerald-200" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "vegetarian" ? "text-emerald-100" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.vegetarianDesc}
             </p>
           </button>
@@ -267,29 +342,52 @@ Please respect my dietary pattern strictly.`;
             onClick={() => handleSelectDiet("vegan")}
             className={`flex flex-col text-left p-4 rounded-xl border transition relative ${
               dietType === "vegan"
-                ? "bg-teal-900 text-white dark:bg-teal-950 dark:text-teal-100 border-teal-600 dark:border-teal-500 shadow-md ring-2 ring-teal-500/20"
+                ? "bg-teal-600 text-white dark:bg-teal-700 dark:text-white border-2 border-teal-400 dark:border-teal-300 shadow-lg shadow-teal-600/25 ring-4 ring-teal-500/20"
                 : "bg-zinc-50/70 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center gap-2">
-                <Leaf className={`w-5 h-5 ${dietType === "vegan" ? "text-teal-300" : "text-teal-600 dark:text-teal-400"}`} />
+                <Leaf className={`w-5 h-5 ${dietType === "vegan" ? "text-teal-100" : "text-teal-600 dark:text-teal-400"}`} />
                 <span className="font-bold text-sm">{t.nutrition.dietTypes.vegan}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                  dietType === "vegan" 
-                    ? "bg-teal-800 text-teal-100" 
-                    : "bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300"
-                }`}>
+              </div>
+              {dietType === "vegan" ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-teal-900 shadow-sm flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-pulse" />
+                  {language === "ru" ? "✓ ВЫБРАНО" : "✓ SELECTED"}
+                </span>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-zinc-200/80 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
                   {t.nutrition.dietTypes.veganBadge}
                 </span>
-              </div>
-              {dietType === "vegan" && (
-                <CheckCircle2 className="w-4 h-4 text-teal-300" />
               )}
             </div>
-            <p className={`text-xs leading-relaxed ${dietType === "vegan" ? "text-teal-200" : "text-zinc-500 dark:text-zinc-400"}`}>
+            <p className={`text-xs leading-relaxed ${dietType === "vegan" ? "text-teal-100" : "text-zinc-500 dark:text-zinc-400"}`}>
               {t.nutrition.dietTypes.veganDesc}
             </p>
+          </button>
+        </div>
+
+        {/* Action bar under switcher cards */}
+        <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{language === "ru" ? "Активный рацион для меню:" : "Active pattern for meal plan:"}</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              {dietType === "vegetarian" ? (language === "ru" ? "Вегетарианец (Лакто)" : "Vegetarian (Lacto)") : dietType === "vegan" ? (language === "ru" ? "Веган (100% растительный)" : "Vegan (Plant-based)") : (language === "ru" ? "Всеядный" : "Omnivore")}
+            </span>
+          </div>
+          <button
+            onClick={handleConsultAi}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+            <span>
+              {language === "ru" 
+                ? (dietType === "vegetarian" ? "Создать вегетарианское меню с AI-доктором" : dietType === "vegan" ? "Создать веганское меню с AI-доктором" : "Создать сбалансированное меню с AI-доктором")
+                : (dietType === "vegetarian" ? "Generate Vegetarian Meal Plan" : dietType === "vegan" ? "Generate Vegan Meal Plan" : "Generate Balanced Meal Plan")}
+            </span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
