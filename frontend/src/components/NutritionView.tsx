@@ -546,7 +546,7 @@ Please respect my dietary pattern strictly.`;
                         {language === "ru" ? "Очищенные семена конопли и тыквы" : "Hemp & pumpkin seeds"}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                        {language === "ru" ? "Пищевые дрожжи (nooch + B12)" : "Nutritional yeast (+ B12)"}
+                        {language === "ru" ? "Семена кунжута и тахини (кальций и белок)" : "Sesame seeds & tahini (calcium & protein)"}
                       </span>
                     </>
                   )}
@@ -561,13 +561,13 @@ Please respect my dietary pattern strictly.`;
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Шпинат, руккола, кейл, салат романо" : "Spinach, arugula, kale, romaine"}
+                    {language === "ru" ? "Руккола, кейл, салат романо, айсберг" : "Arugula, kale, romaine & iceberg lettuce"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Брокколи, цветная капуста, спаржа" : "Broccoli, cauliflower, asparagus"}
+                    {language === "ru" ? "Брокколи, цветная капуста, кабачки" : "Broccoli, cauliflower, zucchini"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
-                    {language === "ru" ? "Кабачки, огурцы, болгарский перец" : "Zucchini, cucumbers, bell peppers"}
+                    {language === "ru" ? "Огурцы, болгарский перец, сельдерей" : "Cucumbers, bell peppers, celery"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
                     {language === "ru" ? "Томаты (источник ликопина)" : "Tomatoes (lycopene source)"}
@@ -699,6 +699,9 @@ Please respect my dietary pattern strictly.`;
                     </span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
                       {language === "ru" ? "Жирные сорта свинины и баранины" : "Fatty pork & mutton cuts"}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                      {language === "ru" ? "Субпродукты и избыток пуринов: печень, почки, шпинат, щавель, спаржа" : "Offal & high-purine foods: liver, kidneys, spinach, sorrel, asparagus"}
                     </span>
                   </div>
                 </div>
