@@ -299,6 +299,8 @@ export const translations = {
     nutrition: {
       title: "Персональные рекомендации по питанию",
       subtitle: "Клинический анализ рациона, расчет КБЖУ и продуктовые корзины",
+      savePdfBtn: "Сохранить в PDF",
+      savePdfTooltip: "Сохранить план питания и рацион в PDF / Распечатать",
       dietTypeTitle: "Тип рациона питания",
       dietTypes: {
         omnivore: "Всеядный",
@@ -667,6 +669,8 @@ export const translations = {
     nutrition: {
       title: "Personalized Nutrition Recommendations",
       subtitle: "Clinical diet analysis, macronutrient calculation and food baskets",
+      savePdfBtn: "Save to PDF",
+      savePdfTooltip: "Save nutrition plan to PDF / Print",
       dietTypeTitle: "Dietary Pattern",
       dietTypes: {
         omnivore: "Omnivore",

@@ -23,7 +23,8 @@ import {
   Leaf,
   Wheat,
   Fish,
-  Coffee
+  Coffee,
+  Printer
 } from "lucide-react";
 import { Patient, LabMetric, api } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
@@ -216,6 +217,603 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
     }
   };
 
+  const handlePrintNutritionPlan = () => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const patientName = patient.full_name || (language === "ru" ? "Пациент" : "Patient");
+    const patientAge = patient.age ? `${patient.age} ${language === "ru" ? "лет" : "y.o."}` : "";
+    const patientGender = patient.gender
+      ? (language === "ru"
+          ? (patient.gender.toLowerCase().includes("m") || patient.gender.toLowerCase().includes("муж") ? "Мужской" : "Женский")
+          : patient.gender)
+      : "";
+    const patientMetrics = [
+      patientAge,
+      patientGender,
+      patient.weight ? `${language === "ru" ? "Вес:" : "Weight:"} ${patient.weight} кг` : "",
+      patient.height ? `${language === "ru" ? "Рост:" : "Height:"} ${patient.height} см` : "",
+      `BMI (ИМТ): ${bmi}`,
+      patient.blood_type ? `${language === "ru" ? "Группа крови:" : "Blood group:"} ${patient.blood_type}` : "",
+    ]
+      .filter(Boolean)
+      .join("  •  ");
+
+    const dateStr = new Date().toLocaleString(language === "ru" ? "ru-RU" : "en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let dietTitle = "";
+    let dietBadge = "";
+    let dietDescription = "";
+    if (dietType === "vegetarian") {
+      dietTitle = language === "ru" ? "Вегетарианский рацион (Лакто-вегетарианство)" : "Vegetarian Diet (Lacto-vegetarian)";
+      dietBadge = language === "ru" ? "ЛАКТО-ВЕГЕТАРИАНСТВО" : "LACTO-VEGETARIAN";
+      dietDescription = language === "ru"
+        ? "Включает натуральные молочные продукты (творог 2–5%, греческий йогурт, кефир, качественные сыры), все виды чечевицы, нут, маш, фасоль, тофу, темпе, цельные злаки, овощи, свежую зелень, орехи, семена и полезные масла. Строго исключает мясо, птицу, рыбу, морепродукты и яйца."
+        : "Includes natural dairy (cottage cheese 2–5%, Greek yogurt, kefir, cheeses), all lentils, chickpeas, mung beans, tofu, tempeh, whole grains, vegetables, fresh greens, nuts, seeds, and healthy oils. Strictly excludes meat, poultry, fish, seafood, and eggs.";
+    } else if (dietType === "vegan") {
+      dietTitle = language === "ru" ? "Веганский рацион (100% растительный)" : "Vegan Diet (100% Plant-Based)";
+      dietBadge = language === "ru" ? "100% РАСТИТЕЛЬНЫЙ" : "100% PLANT-BASED";
+      dietDescription = language === "ru"
+        ? "Исключительно растительные источники белка (органический тофу, темпе, бобы эдамаме, чечевица, нут, фасоль, семена конопли), цельные крупы (киноа, гречка, овес), семена, орехи, овощи, зелень, полезные растительные масла. Полностью исключает любые продукты животного происхождения."
+        : "Exclusively plant-based protein sources (tofu, tempeh, edamame, lentils, chickpeas, beans, hemp seeds), whole grains, seeds, nuts, vegetables, greens, and healthy oils. Strictly excludes all animal products.";
+    } else {
+      dietTitle = language === "ru" ? "Сбалансированный всеядный рацион (Средиземноморский стиль)" : "Balanced Omnivore Diet (Mediterranean style)";
+      dietBadge = language === "ru" ? "СРЕДИЗЕМНОМОРСКИЙ СТИЛЬ" : "MEDITERRANEAN STYLE";
+      dietDescription = language === "ru"
+        ? "Сбалансированное питание с упором на дикую морскую рыбу (богатую омега-3), постную птицу, яйца, бобовые, цельные злаки, овощи, ягоды, полезные ненасыщенные жиры (EVOO, авокадо, орехи). Ограничение ультра-обработанного мяса и трансжиров."
+        : "Balanced nutrition emphasizing wild ocean fish, lean poultry, eggs, legumes, whole grains, vegetables, and healthy unsaturated fats (EVOO, avocado, nuts). Restricting ultra-processed meats and trans fats.";
+    }
+
+    const waterDailyLiters = (Math.round(weight * 32 / 100) / 10).toFixed(1);
+
+    const proteinItems = dietType === "omnivore"
+      ? [
+          language === "ru" ? "Дикая морская рыба: лосось, треска, минтай, скумбрия (омега-3 для эндотелия)" : "Wild ocean fish: salmon, cod, pollock, mackerel",
+          language === "ru" ? "Филе индейки и куриная грудка без кожи (постный белок)" : "Skinless turkey and chicken breast",
+          language === "ru" ? "Постная телятина и мясо кролика (минимум насыщенных жиров)" : "Lean veal and rabbit meat",
+          language === "ru" ? "Куриные и перепелиные яйца пашот / всмятку (холин и лецитин)" : "Poached / soft-boiled eggs",
+          language === "ru" ? "Красная и зеленая чечевица, маш (растительный белок и клетчатка)" : "Red & green lentils, mung beans",
+          language === "ru" ? "Нут и натуральный хумус с тахини" : "Chickpeas & natural hummus",
+          language === "ru" ? "Органический тофу и темпе" : "Organic tofu & tempeh",
+        ]
+      : dietType === "vegetarian"
+      ? [
+          language === "ru" ? "Творог 2–5% натуральный (казеиновый белок, кальций)" : "Natural cottage cheese 2–5%",
+          language === "ru" ? "Греческий йогурт без сахара, простокваша, ацидофилин" : "Plain Greek yogurt, kefir",
+          language === "ru" ? "Сыры с низкой соленостью: адыгейский, моцарелла, рикотта" : "Low-sodium cheeses: paneer, mozzarella, ricotta",
+          language === "ru" ? "Пармезан выдержанный (20–30г — источник биодоступного кальция)" : "Aged Parmesan (20–30g)",
+          language === "ru" ? "Чечевица: красная, зеленая, черная белуга (до 24г белка)" : "Lentils: red, green, black beluga",
+          language === "ru" ? "Нут, маш и фасоль (предварительно вымоченные)" : "Chickpeas, mung & kidney beans",
+          language === "ru" ? "Хумус натуральный с кунжутной пастой тахини" : "Natural hummus with tahini",
+          language === "ru" ? "Органический тофу и темпе" : "Organic tofu & tempeh",
+          language === "ru" ? "Изолят конопляного, тыквенного и горохового протеина" : "Hemp, pumpkin & pea protein isolate",
+        ]
+      : [
+          language === "ru" ? "Тофу органический, ферментированный темпе, бобы эдамаме" : "Organic tofu, fermented tempeh, edamame",
+          language === "ru" ? "Чечевица всех видов: красная, зеленая, черная (до 18г белка)" : "Lentils: red, green, black",
+          language === "ru" ? "Нут, маш, черная и белая фасоль (с вымачиванием)" : "Chickpeas, mung, black & white beans",
+          language === "ru" ? "Сейтан домашний (чистый пшеничный глютеновый белок)" : "Homemade seitan (pure wheat gluten)",
+          language === "ru" ? "Очищенные семена конопли (все 9 незаменимых аминокислот)" : "Hemp hearts (all 9 essential amino acids)",
+          language === "ru" ? "Семена тыквы и подсолнечника (цинк, магний, аргинин)" : "Pumpkin & sunflower seeds",
+          language === "ru" ? "Семена кунжута и паста тахини (кальций и растительный белок)" : "Sesame seeds & tahini paste",
+          language === "ru" ? "Изолят горохового и рисового протеина (чистый аминопрофиль)" : "Pea & brown rice protein isolate",
+        ];
+
+    const vegItems = [
+      language === "ru" ? "Руккола, кейл, салат романо, айсберг, листовой латук" : "Arugula, kale, romaine, iceberg & leaf lettuce",
+      language === "ru" ? "Пекинская и китайская капуста (пак-чой)" : "Napa cabbage & bok choy",
+      language === "ru" ? "Брокколи и цветная капуста (сульфорафан для сосудов)" : "Broccoli & cauliflower",
+      language === "ru" ? "Кабачки, цукини и патиссоны (легко усваиваются, поддержка почек)" : "Zucchini, summer squash & pattypan",
+      language === "ru" ? "Огурцы грунтовые (гидратация и калий)" : "Fresh cucumbers (hydration & potassium)",
+      language === "ru" ? "Болгарский перец всех цветов (чемпион по витамину C)" : "Bell peppers all colors",
+      language === "ru" ? "Томаты спелые (источник антиоксиданта ликопина)" : "Ripe tomatoes (lycopene)",
+      language === "ru" ? "Стеблевой сельдерей и фенхель (фталиды снижают тонус артерий)" : "Celery stalks & fennel",
+      language === "ru" ? "Тыква запеченная и морковь (бета-каротин и калий)" : "Baked pumpkin & carrots",
+      language === "ru" ? "Артишоки и запеченные баклажаны (пектин и гепатопротекция)" : "Artichokes & roasted eggplant",
+      language === "ru" ? "Свежая пряная зелень: укроп, петрушка, кинза, базилик" : "Fresh herbs: dill, parsley, cilantro, basil",
+    ];
+
+    const carbItems = [
+      language === "ru" ? "Гречневая крупа: зеленая и ядрица (рутин укрепляет капилляры)" : "Buckwheat: green & roasted",
+      language === "ru" ? "Киноа: белая, красная, трехцветная (низкий ГИ, без глютена)" : "Quinoa: white, red, tricolor",
+      language === "ru" ? "Бурый, дикий и красный рис (магний и витамины группы B)" : "Brown, wild & red rice",
+      language === "ru" ? "Овсяные хлопья долгой варки (15–20 мин) (бета-глюкан снижает ЛПНП)" : "Rolled whole oats (15-20 min)",
+      language === "ru" ? "Полба (спельта), перловая крупа и ячмень" : "Spelt, pearl barley & whole barley",
+      language === "ru" ? "Булгур из твердых сортов пшеницы (низкий гликемический индекс)" : "Whole grain bulgur",
+      language === "ru" ? "Батат и печеный картофель в кожуре (калий для сердца)" : "Sweet potato & jacket baked potato",
+      language === "ru" ? "Цельнозерновой бездрожжевой хлеб на ржаной закваске" : "100% whole grain sourdough rye bread",
+      language === "ru" ? "Паста из твердых сортов пшеницы al dente или гречневая соба" : "Durum wheat pasta al dente / soba",
+    ];
+
+    const fatItems = [
+      language === "ru" ? "Оливковое масло Extra Virgin первого холодного отжима (EVOO)" : "Extra virgin olive oil (EVOO)",
+      language === "ru" ? "Свежее авокадо и масло авокадо (Омега-9 олеиновая кислота)" : "Fresh avocado & avocado oil",
+      language === "ru" ? "Грецкие орехи (омега-3 АЛК для сосудов)" : "Raw walnuts (ALA Omega-3)",
+      language === "ru" ? "Миндаль сырой (витамин E и магний для эластичности сосудов)" : "Raw almonds (vitamin E & magnesium)",
+      language === "ru" ? "Фундук, кешью и несоленые фисташки (фитостеролы)" : "Hazelnuts, cashews & unsalted pistachios",
+      language === "ru" ? "Свежемолотые семена льна и льняное масло холодного отжима" : "Freshly ground flaxseeds & flax oil",
+      language === "ru" ? "Семена чиа (растворимая слизистая клетчатка и омега-3)" : "Chia seeds (soluble fiber & ALA)",
+      language === "ru" ? "Очищенные семена тыквы и кунжут (цинк, магний, сезамин)" : "Pumpkin seeds & raw sesame",
+    ];
+
+    const fruitItems = [
+      language === "ru" ? "Черника, голубика, брусника (антоцианы защищают сосудистую стенку)" : "Blueberries, wild bilberries, lingonberries",
+      language === "ru" ? "Малина, ежевика, клубника (клетчатка и эллаговая кислота)" : "Raspberries, blackberries, strawberries",
+      language === "ru" ? "Вишня и черешня (доказано снижают уровень мочевой кислоты в крови)" : "Tart cherries & sweet cherries (reduce uric acid)",
+      language === "ru" ? "Зеленые яблоки (пектин связывает и выводит избыточный холестерин)" : "Crisp green apples (soluble pectin)",
+      language === "ru" ? "Гранат и свежие зерна граната (пуникалагин препятствует окислению ЛПНП)" : "Pomegranate seeds (punicalagins)",
+      language === "ru" ? "Груши, сливы и абрикосы (растворимая клетчатка для микробиоты)" : "Pears, plums & fresh apricots",
+      language === "ru" ? "Грейпфрут, апельсины, лимонный сок (цитраты против камней в почках)" : "Grapefruit, oranges & lemon juice",
+      language === "ru" ? "Киви (1–2 плода в день поддерживают липидный профиль и моторику ЖКТ)" : "Kiwi fruit (1-2 daily)",
+    ];
+
+    const fermentedItems = [
+      language === "ru" ? "Квашеная капуста без сахара (лактобактерии и витамин C)" : "Naturally fermented sauerkraut",
+      language === "ru" ? "Натуральный кефир, простокваша, ряженка (живые пробиотические культуры)" : "Natural kefir, plain buttermilk",
+      language === "ru" ? "Слабосоленое кимчи ферментированное (поддержка кишечного микробиома)" : "Mild fermented kimchi",
+      language === "ru" ? "Органическая мисо-паста из ферментированных бобов (ферменты пищеварения)" : "Organic traditional miso paste",
+      language === "ru" ? "Натуральная комбуча без сахара (чайный квас для пищеварения)" : "Raw sugar-free kombucha",
+      language === "ru" ? "Яблочный нефильтрованный уксус с «маточным осадком»" : "Raw apple cider vinegar with 'mother'",
+    ];
+
+    const herbItems = [
+      language === "ru" ? "Куркума с черным перцем (куркумин + пиперин снижают воспаление сосудов)" : "Turmeric with black pepper",
+      language === "ru" ? "Свежий корень имбиря (гингеролы улучшают микроциркуляцию)" : "Fresh ginger root",
+      language === "ru" ? "Чеснок и репчатый лук (аллицин препятствует окислению липидов)" : "Fresh garlic & onions",
+      language === "ru" ? "Розмарин, тимьян, орегано, базилик (полифенолы)" : "Rosemary, thyme, oregano & basil",
+      language === "ru" ? "Зеленый чай листовой и матча (полифенол EGCG — кардиопротектор)" : "Loose-leaf green tea & matcha",
+      language === "ru" ? "Травяные настои: ромашка, мята, мелисса, плоды шиповника" : "Herbal teas: chamomile, mint, rosehip",
+      language === "ru" ? "Минеральная щелочная вода (способствует выведению мочевой кислоты)" : "Alkaline mineral water",
+    ];
+
+    const dietRestrictedItems = dietType === "vegetarian"
+      ? [
+          language === "ru" ? "Высокожирные молочные продукты: жирные и плавленые сыры, сливочное масло, сливки 30%+, избыток гхи (насыщенные жиры повышают ЛПНП)" : "High-fat dairy: aged & processed cheeses, butter, heavy cream",
+          language === "ru" ? "Соленые и рассольные сыры (сулугуни, брынза, фета) — избыток натрия перегружает сосуды и почки" : "High-sodium brined cheeses (feta, sulguni, brynza)",
+          language === "ru" ? "Тропические масла (кокосовое, пальмовое) — содержат до 85% насыщенных жирных кислот" : "Tropical oils (coconut, palm)",
+          language === "ru" ? "Избыток пуринов: шпинат, щавель, спаржа, грибы, избыток бобовых без вымачивания (нагрузка при повышенной мочевой кислоте)" : "High purine foods: spinach, sorrel, asparagus, mushrooms",
+          language === "ru" ? "Сладкие творожные массы, глазированные сырки, десерты с сахаром (скачки глюкозы)" : "Sweet dairy desserts, glazed curd bars",
+        ]
+      : dietType === "vegan"
+      ? [
+          language === "ru" ? "Кокосовое масло, кокосовые сливки и молоко, пальмовый жир (скрытые насыщенные жиры, резко повышающие ЛПНП)" : "Coconut oil, coconut cream/milk, palm fat",
+          language === "ru" ? "Ультра-обработанные веганские сыры на крахмале/кокосовом жире и жареные веганские полуфабрикаты" : "Processed vegan 'cheeses' and commercial mock-meats",
+          language === "ru" ? "Концентрированная фруктоза: сироп агавы, финиковые сиропы в избытке (стимулируют выработку мочевой кислоты)" : "Concentrated fructose: agave syrup, heavy date syrup",
+          language === "ru" ? "Избыток соевого соуса, консервации и соленых снеков (натриевая перегрузка сосудов и почек)" : "Excess soy sauce, pickles & salted snacks",
+          language === "ru" ? "Рафинированные растительные масла с избытком омега-6 (подсолнечное, кукурузное) — провоцируют воспаление" : "Refined omega-6 vegetable oils (sunflower, corn)",
+          language === "ru" ? "Дрожжевые хлопья (nutritional yeast) и грибы в больших количествах (высокая пуриновая нагрузка)" : "Nutritional yeast and mushrooms in large amounts",
+        ]
+      : [
+          language === "ru" ? "Колбасы, сосиски, салями, ветчина, бекон (ультра-обработанное мясо — доказанный канцероген ВОЗ)" : "Sausages, hot dogs, salami, bacon",
+          language === "ru" ? "Копчености и полуфабрикаты глубокой заморозки" : "Smoked meats and commercial frozen meals",
+          language === "ru" ? "Жирные сорта свинины и баранины" : "Fatty pork & mutton cuts",
+          language === "ru" ? "Субпродукты и избыток пуринов: печень, почки, шпинат, щавель, спаржа" : "Offal & high-purine foods: liver, kidneys, spinach, sorrel, asparagus",
+        ];
+
+    const metabolicRestrictedItems = [
+      language === "ru" ? "Трансжиры (маргарин, фастфуд, кондитерский жир, фабричная выпечка)" : "Trans-fats (margarine, fast food, shortening)",
+      language === "ru" ? "Добавленный сахар, сиропы и сладкие газированные напитки" : "Added sugar, syrups & sugary sodas",
+      language === "ru" ? "Рафинированная белая мука высшего сорта и сдобная выпечка" : "Refined white flour & pastries",
+      language === "ru" ? "Избыток поваренной соли (> 5г / день)" : "Excess sodium (> 5g/day)",
+      language === "ru" ? "Алкогольные напитки (блокируют выведение мочевой кислоты и повышают давление)" : "Alcoholic beverages",
+    ];
+
+    const renderPills = (items: string[], type: "green" | "red") => {
+      const cls = type === "green" ? "pill pill-green" : "pill pill-red";
+      return items.map((it) => `<span class="${cls}">${it}</span>`).join(" ");
+    };
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8"/>
+        <title>${language === "ru" ? "План питания" : "Nutrition Plan"} - ${patientName}</title>
+        <style>
+          @media print {
+            @page {
+              size: A4 portrait;
+              margin: 10mm 12mm;
+            }
+            body {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+          }
+          * { box-sizing: border-box; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+            font-size: 8.5pt;
+            line-height: 1.35;
+          }
+          .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #059669;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+          }
+          .logo-title {
+            font-size: 14pt;
+            font-weight: 800;
+            color: #065f46;
+            letter-spacing: -0.5px;
+          }
+          .doc-subtitle {
+            font-size: 8pt;
+            color: #475569;
+            font-weight: 600;
+            margin-top: 1px;
+            text-transform: uppercase;
+          }
+          .header-meta {
+            text-align: right;
+            font-size: 7.5pt;
+            color: #64748b;
+          }
+          .patient-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+          }
+          .patient-name {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #0f172a;
+          }
+          .patient-meta {
+            font-size: 8pt;
+            color: #475569;
+            margin-top: 2px;
+          }
+          .diet-banner {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 7px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+          }
+          .diet-badge {
+            display: inline-block;
+            background: #059669;
+            color: #ffffff;
+            font-size: 7pt;
+            font-weight: 700;
+            padding: 1.5px 6px;
+            border-radius: 4px;
+            margin-bottom: 3px;
+          }
+          .diet-banner-title {
+            font-size: 10pt;
+            font-weight: 700;
+            color: #065f46;
+          }
+          .diet-banner-desc {
+            font-size: 7.5pt;
+            color: #047857;
+            margin-top: 2px;
+            line-height: 1.3;
+          }
+          .macros-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+            margin-bottom: 10px;
+          }
+          .macro-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            padding: 6px 8px;
+            text-align: center;
+          }
+          .macro-val {
+            font-size: 11.5pt;
+            font-weight: 800;
+            color: #0f172a;
+            font-family: monospace;
+          }
+          .macro-lbl {
+            font-size: 6.5pt;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #64748b;
+            margin-top: 1px;
+          }
+          .macro-sub {
+            font-size: 7pt;
+            color: #059669;
+            font-weight: 600;
+            margin-top: 1px;
+          }
+          .alerts-container {
+            margin-bottom: 10px;
+          }
+          .alert-row {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 5px 8px;
+            margin-bottom: 4px;
+            font-size: 7.5pt;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+          .two-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+          }
+          .zone-card {
+            border-radius: 7px;
+            padding: 9px 10px;
+            page-break-inside: avoid;
+          }
+          .green-zone {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+          }
+          .red-zone {
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+          }
+          .zone-header {
+            font-size: 8.5pt;
+            font-weight: 700;
+            margin-bottom: 5px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid;
+          }
+          .green-header { color: #166534; border-color: #bbf7d0; }
+          .red-header { color: #991b1b; border-color: #fecdd3; }
+          .group-title {
+            font-size: 7pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-top: 5px;
+            margin-bottom: 2px;
+          }
+          .group-green { color: #854d0e; }
+          .group-red { color: #9a3412; }
+          .pill {
+            display: inline-block;
+            padding: 1.5px 5px;
+            border-radius: 4px;
+            font-size: 7pt;
+            font-weight: 500;
+            margin-right: 2px;
+            margin-bottom: 2px;
+            line-height: 1.25;
+          }
+          .pill-green {
+            background: #ffffff;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+          }
+          .pill-red {
+            background: #ffffff;
+            color: #991b1b;
+            border: 1px solid #fecdd3;
+          }
+          .guidelines-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            padding: 7px 10px;
+            margin-bottom: 8px;
+            font-size: 7.5pt;
+            line-height: 1.35;
+          }
+          .guidelines-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            font-size: 7pt;
+            letter-spacing: 0.4px;
+          }
+          .footer {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+            font-size: 6.5pt;
+            color: #94a3b8;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header-row">
+          <div>
+            <div class="logo-title">MY_DOC</div>
+            <div class="doc-subtitle">${language === "ru" ? "ПЕРСОНАЛЬНЫЙ ПЛАН ПИТАНИЯ И КЛИНИЧЕСКИЙ РАЦИОН" : "PERSONALIZED NUTRITION PLAN & CLINICAL DIET"}</div>
+          </div>
+          <div class="header-meta">
+            <div><strong>${language === "ru" ? "Дата:" : "Date:"}</strong> ${dateStr}</div>
+            <div><strong>${language === "ru" ? "ID пациента:" : "Patient ID:"}</strong> #${patient.id}</div>
+          </div>
+        </div>
+
+        <div class="patient-box">
+          <div class="patient-name">${patientName}</div>
+          <div class="patient-meta">${patientMetrics}</div>
+          ${patient.chronic_diseases ? `<div style="font-size: 7.5pt; color: #475569; margin-top: 2px;"><strong>${language === "ru" ? "Диагнозы:" : "Diagnoses:"}</strong> ${patient.chronic_diseases}</div>` : ""}
+          ${patient.allergies ? `<div style="font-size: 7.5pt; color: #dc2626; margin-top: 1px;"><strong>${language === "ru" ? "Аллергии / Непереносимости:" : "Allergies / Intolerances:"}</strong> ${patient.allergies}</div>` : ""}
+        </div>
+
+        <div class="diet-banner">
+          <span class="diet-badge">${dietBadge}</span>
+          <div class="diet-banner-title">${dietTitle}</div>
+          <div class="diet-banner-desc">${dietDescription}</div>
+        </div>
+
+        <div class="macros-grid">
+          <div class="macro-card">
+            <div class="macro-val">${targetCalories}</div>
+            <div class="macro-lbl">${language === "ru" ? "Калории" : "Calories"} (ккал/день)</div>
+            <div class="macro-sub">${caloricGoalLabel}</div>
+          </div>
+          <div class="macro-card">
+            <div class="macro-val">${targetProteinGrams} г</div>
+            <div class="macro-lbl">${language === "ru" ? "Белки" : "Proteins"} (${proteinKcal} ккал)</div>
+            <div class="macro-sub">~${Math.round((proteinKcal / targetCalories) * 100)}% (${weight ? 1.3 : 1.3} г/кг)</div>
+          </div>
+          <div class="macro-card">
+            <div class="macro-val">${targetFatGrams} г</div>
+            <div class="macro-lbl">${language === "ru" ? "Жиры" : "Fats"} (${fatKcal} ккал)</div>
+            <div class="macro-sub">~${Math.round((fatKcal / targetCalories) * 100)}% (полезные жиры)</div>
+          </div>
+          <div class="macro-card">
+            <div class="macro-val">${targetCarbsGrams} г</div>
+            <div class="macro-lbl">${language === "ru" ? "Углеводы" : "Carbohydrates"} (${carbsKcal} ккал)</div>
+            <div class="macro-sub">~${Math.round((carbsKcal / targetCalories) * 100)}% (сложные злаки)</div>
+          </div>
+        </div>
+
+        ${(hasElevatedGlucose || hasElevatedCholesterol || hasLowEgfr || hasHighUricAcid) ? `
+          <div class="alerts-container">
+            ${hasElevatedGlucose ? `
+              <div class="alert-row">
+                <span style="font-weight: 700;">⚠️ ${language === "ru" ? "Глюкоза выше нормы" : "Elevated Glucose"} (${latestGlucose?.value} ммоль/л):</span>
+                <span>${language === "ru" ? "строго ограничить добавленный сахар, сиропы и продукты с высоким гликемическим индексом." : "strictly limit added sugars and high-glycemic foods."}</span>
+              </div>
+            ` : ""}
+            ${hasElevatedCholesterol ? `
+              <div class="alert-row">
+                <span style="font-weight: 700;">⚠️ ${language === "ru" ? "Холестерин / ЛПНП повышены" : "Elevated Cholesterol / LDL"}:</span>
+                <span>${language === "ru" ? "минимизировать насыщенные жирные кислоты, полностью исключить гидрогенизированные трансжиры." : "minimize saturated fats, strictly eliminate trans-fats."}</span>
+              </div>
+            ` : ""}
+            ${hasLowEgfr ? `
+              <div class="alert-row">
+                <span style="font-weight: 700;">⚠️ ${language === "ru" ? "СКФ снижена" : "Reduced eGFR"} (${latestEgfr?.value}):</span>
+                <span>${language === "ru" ? "контролировать белковую нагрузку (до 1.0 г/кг) и жестко ограничить натрий (соль)." : "control protein load (up to 1.0 g/kg) and restrict dietary sodium."}</span>
+              </div>
+            ` : ""}
+            ${hasHighUricAcid ? `
+              <div class="alert-row">
+                <span style="font-weight: 700;">⚠️ ${language === "ru" ? "Мочевая кислота повышена" : "Elevated Uric Acid"} (${latestUricAcid?.value}):</span>
+                <span>${language === "ru" ? "диета с низким содержанием пуринов: исключить шпинат, щавель, спаржу, алкоголь." : "low-purine protocol: eliminate spinach, sorrel, asparagus, alcohol."}</span>
+              </div>
+            ` : ""}
+          </div>
+        ` : ""}
+
+        <div class="two-cols">
+          <div class="zone-card green-zone">
+            <div class="zone-header green-header">✅ ${language === "ru" ? "РЕКОМЕНДОВАННЫЕ ПРОДУКТЫ (ЗЕЛЕНАЯ ЗОНА)" : "RECOMMENDED FOODS (GREEN ZONE)"}</div>
+            
+            <div class="group-title group-green">${language === "ru" ? "1. Источники белка:" : "1. Protein Sources:"}</div>
+            <div>${renderPills(proteinItems, "green")}</div>
+
+            <div class="group-title group-green">${language === "ru" ? "2. Овощи и зелень:" : "2. Vegetables & Greens:"}</div>
+            <div>${renderPills(vegItems, "green")}</div>
+
+            <div class="group-title group-green">${language === "ru" ? "3. Сложные углеводы и цельные злаки:" : "3. Whole Grains & Complex Carbs:"}</div>
+            <div>${renderPills(carbItems, "green")}</div>
+
+            <div class="group-title group-green">${language === "ru" ? "4. Полезные жиры, орехи и семена:" : "4. Healthy Fats & Seeds:"}</div>
+            <div>${renderPills(fatItems, "green")}</div>
+
+            <div class="group-title group-green">${language === "ru" ? "5. Ягоды и фрукты (низкий ГИ):" : "5. Berries & Low-GI Fruits:"}</div>
+            <div>${renderPills(fruitItems, "green")}</div>
+
+            <div class="group-title group-green">${language === "ru" ? "6. Ферментированные продукты и пробиотики:" : "6. Fermented Foods & Probiotics:"}</div>
+            <div>${renderPills(fermentedItems, "green")}</div>
+
+            <div class="group-title group-green">${language === "ru" ? "7. Противовоспалительные специи и травы:" : "7. Herbs & Anti-Inflammatory Teas:"}</div>
+            <div>${renderPills(herbItems, "green")}</div>
+          </div>
+
+          <div class="zone-card red-zone">
+            <div class="zone-header red-header">🚫 ${language === "ru" ? "ЧТО ИСКЛЮЧИТЬ ИЛИ ОГРАНИЧИТЬ (КРАСНАЯ ЗОНА)" : "FOODS TO EXCLUDE OR LIMIT (RED ZONE)"}</div>
+
+            <div class="group-title group-red">${language === "ru" ? "1. Ограничения по выбранному типу питания:" : "1. Diet-Specific Restrictions:"}</div>
+            <div>${renderPills(dietRestrictedItems, "red")}</div>
+
+            <div class="group-title group-red">${language === "ru" ? "2. Продукты с высоким кардио-метаболическим риском:" : "2. High Cardio-Metabolic Risk Foods:"}</div>
+            <div>${renderPills(metabolicRestrictedItems, "red")}</div>
+
+            <div style="margin-top: 10px; padding: 8px; background: #ffffff; border: 1px solid #fecdd3; border-radius: 6px;">
+              <div style="font-weight: 700; color: #991b1b; font-size: 7.5pt; margin-bottom: 2px;">⚠️ ${language === "ru" ? "МЕТАБОЛИЧЕСКИЙ КОНТРОЛЬ:" : "METABOLIC CONTROL:"}</div>
+              <div style="font-size: 7pt; color: #7f1d1d; line-height: 1.3;">
+                ${language === "ru"
+                  ? "Соблюдение данных ограничений предотвращает рост атеросклеротических бляшек, снижает воспаление эндотелия и нормализует уровень мочевой кислоты и гликемии."
+                  : "Adhering to these restrictions prevents progression of atherosclerotic plaques, reduces vascular inflammation, and stabilizes uric acid and glucose levels."}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="guidelines-box">
+          <div class="guidelines-title">📋 ${language === "ru" ? "ПРАКТИЧЕСКИЕ ПРАВИЛА РЕЖИМА И ГИДРАТАЦИИ" : "PRACTICAL GUIDELINES & HYDRATION"}</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+            <div>
+              <strong>💧 ${language === "ru" ? "Питьевой баланс:" : "Hydration:"}</strong><br/>
+              ${language === "ru" ? `Норма чистой воды ~${waterDailyLiters} л/день (30–35 мл/кг), равномерно между приемами пищи.` : `Water target ~${waterDailyLiters} L/day, distributed throughout the day.`}
+            </div>
+            <div>
+              <strong>⏰ ${language === "ru" ? "Режим приемов:" : "Meal Frequency:"}</strong><br/>
+              ${language === "ru" ? "3 основных приема + 1 перекус. Интервал 3.5–4 ч. Ужин за 2.5–3 ч до сна." : "3 main meals + 1 snack. Dinner 2.5-3 hours before sleep."}
+            </div>
+            <div>
+              <strong>🍳 ${language === "ru" ? "Кулинарная обработка:" : "Cooking Methods:"}</strong><br/>
+              ${language === "ru" ? "Запекание, варка, пар, тушение. Исключить жарку с темной корочкой (КПГ/AGEs)." : "Baking, steaming, stewing. Strictly avoid frying with dark crust (AGEs)."}
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          ${language === "ru"
+            ? "Документ сформирован цифровой системой MY_DOC на основе медицинской карты пациента и лабораторных биомаркеров. Заключение носит рекомендательный характер и не заменяет очный врачебный осмотр."
+            : "Generated by MY_DOC AI Digital Health Platform based on patient health records and lab biomarkers. Recommendations are supportive and do not replace in-person physician care."}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 2500);
+    }, 250);
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Header */}
@@ -233,40 +831,51 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
           </p>
         </div>
 
-        <button
-          onClick={handleConsultAi}
-          className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl text-sm font-semibold border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-950 dark:text-emerald-100 backdrop-blur-md shadow-sm transition-all hover:scale-[1.01] shrink-0"
-        >
-          <Sparkles className="w-5 h-5 text-yellow-500 dark:text-yellow-400 shrink-0" />
-          <div className="flex flex-col text-left">
-            <span className="font-bold text-sm leading-tight text-emerald-900 dark:text-emerald-200">
-              {language === "ru" 
-                ? (dietType === "vegetarian" 
-                    ? "Составить Вегетарианское меню на неделю" 
-                    : dietType === "vegan" 
-                    ? "Составить Веганское меню на неделю" 
-                    : "Составить Сбалансированное меню на неделю")
-                : (dietType === "vegetarian" 
-                    ? "Generate Vegetarian Weekly Meal Plan" 
-                    : dietType === "vegan" 
-                    ? "Generate Vegan Weekly Meal Plan" 
-                    : "Generate Balanced Weekly Meal Plan")}
-            </span>
-            <span className="text-[11px] font-normal text-emerald-700/80 dark:text-emerald-300/80 flex items-center gap-1.5 mt-0.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-              <span>{language === "ru" ? "Режим:" : "Diet:"}</span>
-              <span className="font-bold underline decoration-emerald-500/40">
-                {dietType === "vegetarian" 
-                  ? (language === "ru" ? "Вегетарианец (Лакто)" : "Vegetarian (Lacto)")
-                  : dietType === "vegan"
-                  ? (language === "ru" ? "Веган (100% растительный)" : "Vegan (Plant-based)")
-                  : (language === "ru" ? "Всеядный" : "Omnivore")}
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-end">
+          <button
+            onClick={handlePrintNutritionPlan}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border border-zinc-250 dark:border-zinc-700 bg-white hover:bg-zinc-50 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 transition shadow-2xs shrink-0 cursor-pointer"
+            title={t.nutrition?.savePdfTooltip || (language === "ru" ? "Сохранить план питания и рацион в PDF / Распечатать" : "Save nutrition plan to PDF / Print")}
+          >
+            <Printer className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>{t.nutrition?.savePdfBtn || (language === "ru" ? "Сохранить в PDF" : "Save to PDF")}</span>
+          </button>
+
+          <button
+            onClick={handleConsultAi}
+            className="flex items-center gap-3 px-4.5 py-2.5 rounded-2xl text-sm font-semibold border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-950 dark:text-emerald-100 backdrop-blur-md shadow-sm transition-all hover:scale-[1.01] shrink-0 cursor-pointer"
+          >
+            <Sparkles className="w-5 h-5 text-yellow-500 dark:text-yellow-400 shrink-0" />
+            <div className="flex flex-col text-left">
+              <span className="font-bold text-sm leading-tight text-emerald-900 dark:text-emerald-200">
+                {language === "ru" 
+                  ? (dietType === "vegetarian" 
+                      ? "Составить Вегетарианское меню на неделю" 
+                      : dietType === "vegan" 
+                      ? "Составить Веганское меню на неделю" 
+                      : "Составить Сбалансированное меню на неделю")
+                  : (dietType === "vegetarian" 
+                      ? "Generate Vegetarian Weekly Meal Plan" 
+                      : dietType === "vegan" 
+                      ? "Generate Vegan Weekly Meal Plan" 
+                      : "Generate Balanced Weekly Meal Plan")}
               </span>
-              <span>• {language === "ru" ? "откроется диалог с готовым запросом" : "opens dialogue with prompt"}</span>
-            </span>
-          </div>
-          <ChevronRight className="w-4 h-4 ml-1 text-emerald-600 dark:text-emerald-400 shrink-0" />
-        </button>
+              <span className="text-[11px] font-normal text-emerald-700/80 dark:text-emerald-300/80 flex items-center gap-1.5 mt-0.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                <span>{language === "ru" ? "Режим:" : "Diet:"}</span>
+                <span className="font-bold underline decoration-emerald-500/40">
+                  {dietType === "vegetarian" 
+                    ? (language === "ru" ? "Вегетарианец (Лакто)" : "Vegetarian (Lacto)")
+                    : dietType === "vegan"
+                    ? (language === "ru" ? "Веган (100% растительный)" : "Vegan (Plant-based)")
+                    : (language === "ru" ? "Всеядный" : "Omnivore")}
+                </span>
+                <span>• {language === "ru" ? "откроется диалог с готовым запросом" : "opens dialogue with prompt"}</span>
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 ml-1 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          </button>
+        </div>
       </div>
 
       {/* Diet Type Switcher (3 Buttons) */}
@@ -381,18 +990,29 @@ Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch
               {dietType === "vegetarian" ? (language === "ru" ? "Вегетарианец (Лакто)" : "Vegetarian (Lacto)") : dietType === "vegan" ? (language === "ru" ? "Веган (100% растительный)" : "Vegan (Plant-based)") : (language === "ru" ? "Всеядный" : "Omnivore")}
             </span>
           </div>
-          <button
-            onClick={handleConsultAi}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm transition"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400" />
-            <span>
-              {language === "ru" 
-                ? (dietType === "vegetarian" ? "Создать вегетарианское меню с AI-доктором" : dietType === "vegan" ? "Создать веганское меню с AI-доктором" : "Создать сбалансированное меню с AI-доктором")
-                : (dietType === "vegetarian" ? "Generate Vegetarian Meal Plan" : dietType === "vegan" ? "Generate Vegan Meal Plan" : "Generate Balanced Meal Plan")}
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={handlePrintNutritionPlan}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-zinc-250 dark:border-zinc-700 bg-white hover:bg-zinc-50 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 transition shadow-2xs cursor-pointer"
+              title={t.nutrition?.savePdfTooltip || (language === "ru" ? "Сохранить план питания и рацион в PDF / Распечатать" : "Save nutrition plan to PDF / Print")}
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{t.nutrition?.savePdfBtn || (language === "ru" ? "Сохранить в PDF" : "Save to PDF")}</span>
+            </button>
+
+            <button
+              onClick={handleConsultAi}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500/30 dark:border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm transition cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400" />
+              <span>
+                {language === "ru" 
+                  ? (dietType === "vegetarian" ? "Создать вегетарианское меню с AI-доктором" : dietType === "vegan" ? "Создать веганское меню с AI-доктором" : "Создать сбалансированное меню с AI-доктором")
+                  : (dietType === "vegetarian" ? "Generate Vegetarian Meal Plan" : dietType === "vegan" ? "Generate Vegan Meal Plan" : "Generate Balanced Meal Plan")}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            </button>
+          </div>
         </div>
 
         {/* Note on Lacto-Vegetarian */}
