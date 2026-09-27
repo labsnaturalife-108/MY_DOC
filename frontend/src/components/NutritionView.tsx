@@ -810,25 +810,25 @@ Please respect my dietary pattern strictly.`;
             <div className="space-y-4">
               {/* Diet-specific restrictions */}
               {dietType === "vegetarian" && (
-                <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                     {language === "ru" ? "Вегетарианские продукты, требующие ограничения при ваших показателях:" : "Vegetarian foods to limit based on your clinical profile:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Высокожирные молочные продукты: жирные и плавленые сыры, сливочное масло, сливки 30%+, избыток гхи (насыщенные жиры повышают ЛПНП и риск роста бляшек)" : "High-fat dairy: aged & processed cheeses, butter, heavy cream, excess ghee (saturated fats elevate LDL and plaque risk)"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Соленые и рассольные сыры (сулугуни, брынза, фета) — избыток натрия перегружает сосуды и почки" : "High-sodium brined cheeses (feta, sulguni, brynza) — excess sodium strains vascular wall & kidneys"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Тропические масла (кокосовое, пальмовое) — содержат до 85% насыщенных жирных кислот, атерогенны" : "Tropical oils (coconut, palm) — up to 85% saturated fatty acids, highly atherogenic"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Избыток пуринов: шпинат, щавель, спаржа, грибы, избыток бобовых без вымачивания (нагрузка при повышенной мочевой кислоте)" : "High purine foods: spinach, sorrel, asparagus, mushrooms, unsoaked legumes (strains uric acid levels)"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Сладкие творожные массы, глазированные сырки, десерты с сахаром (скачки глюкозы, триглицеридов и инсулина)" : "Sweet dairy desserts, glazed curd bars, sweetened condensed milk (spikes glucose & triglycerides)"}
                     </span>
                   </div>
@@ -836,28 +836,28 @@ Please respect my dietary pattern strictly.`;
               )}
 
               {dietType === "vegan" && (
-                <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                     {language === "ru" ? "Веганские продукты, требующие ограничения при ваших показателях:" : "Vegan foods to limit based on your clinical profile:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Кокосовое масло, кокосовые сливки и молоко, пальмовый жир (скрытые насыщенные жиры, резко повышающие ЛПНП)" : "Coconut oil, coconut cream/milk, palm fat (hidden saturated fats drastically elevating LDL)"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Ультра-обработанные веганские сыры на крахмале/кокосовом жире и жареные веганские полуфабрикаты" : "Processed vegan 'cheeses' (starch + coconut oil) and commercial fried mock-meats"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Концентрированная фруктоза: сироп агавы, финиковые сиропы в избытке (стимулируют выработку мочевой кислоты и триглицеридов)" : "Concentrated fructose: agave syrup, heavy date syrup (stimulates liver production of uric acid & triglycerides)"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Избыток соевого соуса, консервации и соленых снеков (натриевая перегрузка сосудистого русла и почек)" : "Excess soy sauce, pickles & salted snacks (sodium overload damaging vascular bed and kidneys)"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Рафинированные растительные масла с избытком омега-6 (подсолнечное, кукурузное) — провоцируют воспаление сосудов" : "Refined omega-6 vegetable oils (sunflower, corn) — fuel systemic vascular inflammation"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Дрожжевые хлопья (nutritional yeast) и грибы в больших количествах (высокая пуриновая нагрузка)" : "Nutritional yeast and mushrooms in large amounts (high purine load for uric acid management)"}
                     </span>
                   </div>
@@ -865,22 +865,22 @@ Please respect my dietary pattern strictly.`;
               )}
 
               {dietType === "omnivore" && (
-                <div className="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
                     {language === "ru" ? "Ультра-обработанные мясные продукты:" : "Ultra-processed meat products:"}
                   </h3>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Колбасы, сосиски, салями, ветчина" : "Sausages, hot dogs, salami, bacon"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Копчености и полуфабрикаты глубокой заморозки" : "Smoked meats and commercial frozen meals"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Жирные сорта свинины и баранины" : "Fatty pork & mutton cuts"}
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-100 dark:bg-rose-900/60 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800">
                       {language === "ru" ? "Субпродукты и избыток пуринов: печень, почки, шпинат, щавель, спаржа" : "Offal & high-purine foods: liver, kidneys, spinach, sorrel, asparagus"}
                     </span>
                   </div>
