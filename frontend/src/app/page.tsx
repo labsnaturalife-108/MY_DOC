@@ -130,10 +130,14 @@ export default function Home() {
     try {
       const defaultTitle = (language === "ru" ? "Консультация " : "Consultation ") + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const sessionTitle = title || defaultTitle;
+      
+      const defaultModelId = activeSession?.model_id || (isLocalOnline ? "lmstudio-auto" : "demo-doctor");
+      const defaultProvider = activeSession?.provider || (isLocalOnline ? "lmstudio" : "demo");
+
       const newSession = await api.createChatSession(activePatient.id, {
         title: sessionTitle,
-        model_id: isLocalOnline ? "lmstudio-auto" : "demo-doctor",
-        provider: isLocalOnline ? "lmstudio" : "demo"
+        model_id: defaultModelId,
+        provider: defaultProvider
       });
       setChatSessions((prev) => [newSession, ...prev]);
       setActiveSessionId(newSession.id);
@@ -301,6 +305,7 @@ export default function Home() {
           <div className={activeTab === "chat" ? "flex-1 flex h-full overflow-hidden" : "flex-1 p-6 overflow-y-auto"}>
             {activeTab === "chat" && activeSession && (
               <ChatView
+                key={activeSession.id}
                 patient={activePatient}
                 session={activeSession}
                 onOpenSettings={() => setIsSettingsOpen(true)}

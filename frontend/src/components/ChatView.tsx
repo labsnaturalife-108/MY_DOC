@@ -87,16 +87,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   }, [prefillQuery]);
 
+  const autoSentRef = useRef<boolean>(false);
+
   useEffect(() => {
-    if (autoSendQuery && !streaming) {
+    if (autoSendQuery && !autoSentRef.current) {
+      autoSentRef.current = true;
       const q = autoSendQuery;
       onClearAutoSend?.();
-      const timer = setTimeout(() => {
-        handleSend(q);
-      }, 150);
-      return () => clearTimeout(timer);
+      setInput(q);
+      handleSend(q);
     }
-  }, [autoSendQuery, session.id]);
+  }, [autoSendQuery]);
 
   const loadModels = async () => {
     try {
@@ -118,7 +119,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const loadMessages = async () => {
     try {
       const msgs = await api.getChatMessages(session.id);
-      setMessages(msgs);
+      setMessages((prev) => {
+        if (msgs.length === 0 && prev.length > 0) {
+          return prev;
+        }
+        return msgs;
+      });
       
       for (let i = msgs.length - 1; i >= 0; i--) {
         if (msgs[i].sources_json) {
