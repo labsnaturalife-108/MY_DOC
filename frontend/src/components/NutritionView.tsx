@@ -169,6 +169,8 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
     const query = language === "ru"
       ? `Здравствуйте, доктор! Составьте для меня подробный персонализированный план питания и пример меню на неделю.
 
+[КРИТИЧЕСКИ ВАЖНО: Пожалуйста, НЕ пишите общее медицинское заключение, разбор анализов и клинические преамбулы. Сразу предоставьте готовое структурированное меню на 7 дней по дням недели!]
+
 🥗 Выбранный тип рациона: ${dietTitleRu}
 Правила рациона:
 ${dietRulesRu}
@@ -186,8 +188,10 @@ ${hasHighUricAcid ? "- Лабораторные маркеры: повышена
 Пожалуйста, составьте подробное меню на 7 дней (с понедельника по воскресенье):
 1. Для каждого дня распишите Завтрак, Обед, Ужин и Полезный перекус.
 2. Укажите примерную калорийность каждого приема пищи.
-3. Строго соблюдайте правила выбранного типа рациона (${dietTitleRu})!`
+3. Строго соблюдайте правила выбранного типа рациона (${dietTitleRu})! Начните ответ сразу с меню, без медицинских заключений.`
       : `Hello, Doctor! Please design a detailed personalized nutrition plan and a 7-day meal plan for me.
+
+[CRITICAL: Please DO NOT write a medical conclusion, review of lab tests, or clinical preambles. Directly provide the structured 7-day meal plan by days of the week!]
 
 🥗 Selected Dietary Pattern: ${dietTitleEn}
 Dietary rules:
@@ -203,7 +207,7 @@ ${hasElevatedCholesterol ? "- Lab markers: elevated cholesterol/LDL (minimize sa
 ${hasLowEgfr ? "- Lab markers: reduced eGFR (limit sodium, protect kidneys)." : ""}
 ${hasHighUricAcid ? "- Lab markers: elevated uric acid (strictly restrict purines: spinach, sorrel, asparagus)." : ""}
 
-Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch, Dinner, and Healthy Snack, strictly adhering to the ${dietTitleEn} pattern!`;
+Please write out a full 7-day meal plan (Monday to Sunday) with Breakfast, Lunch, Dinner, and Healthy Snack, strictly adhering to the ${dietTitleEn} pattern! Begin directly with the meal plan without medical conclusions.`;
 
     if (onStartNewChatWithQuery) {
       onStartNewChatWithQuery(query, sessionTitle, false);
