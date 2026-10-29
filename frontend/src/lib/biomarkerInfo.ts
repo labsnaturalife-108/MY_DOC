@@ -192,6 +192,31 @@ export const BIOMARKER_INFO_RU: Record<string, BiomarkerDetail> = {
     whatIs: "Витамин D (25-OH) — жирорастворимый прогормон, регулирующий минеральный обмен и экспрессию генов.",
     clinicalImpact: "Необходим для всасывания кальция, минерализации костей, крепкого иммунитета, мышечной силы и регуляции настроения."
   },
+  "vit_b12": {
+    category: "Витамины и микроэлементы",
+    whatIs: "Витамин B12 (цианокобаламин) — водорастворимый витамин, необходимый для образования зрелых эритроцитов, синтеза ДНК и нормального функционирования нервной системы.",
+    clinicalImpact: "Критичен для кроветворения и здоровья нервной ткани. Дефицит приводит к мегалобластной анемии, онемению конечностей, когнитивным нарушениям и хронической усталости."
+  },
+  "magnesium": {
+    category: "Витамины и микроэлементы",
+    whatIs: "Магний (Mg) — жизненно важный микроэлемент, кофактор более чем 300 ферментов, регулирующий мышечное сокращение, сосудистый тонус и нервную проводимость.",
+    clinicalImpact: "Контролирует сердечный ритм, артериальное давление и стрессоустойчивость. Дефицит проявляется судорогами, тревожностью, нарушениями сна и склонностью к аритмиям."
+  },
+  "phosphorus": {
+    category: "Витамины и микроэлементы",
+    whatIs: "Неорганический фосфор (P) — ключевой макроэлемент минерального обмена, формирующий структуру костей и зубов, клеточных мембран и молекул энергии (АТФ).",
+    clinicalImpact: "Оценивается совместно с кальцием и витамином D. Необходим для прочности костной ткани и клеточного дыхания; дисбаланс указывает на патологию околощитовидных желез или почек."
+  },
+  "iron": {
+    category: "Витамины и микроэлементы",
+    whatIs: "Сывороточное железо (Fe) — микроэлемент, циркулирующий в комплексе с белком трансферрином для синтеза гемоглобина и клеточных дыхательных ферментов.",
+    clinicalImpact: "Отражает текущий обмен железа. Снижение указывает на латентный дефицит железа или анемию; повышение — на перегрузку железом (гемохроматоз)."
+  },
+  "zinc": {
+    category: "Витамины и микроэлементы",
+    whatIs: "Цинк (Zn) — эссенциальный микроэлемент, входящий в состав ключевых антиоксидантных ферментов, необходимый для иммунитета, регенерации тканей и синтеза тестостерона.",
+    clinicalImpact: "Поддерживает иммунную защиту, репарацию слизистых оболочек и синтез мужских половых гормонов. Дефицит снижает иммунный ответ и замедляет заживление тканей."
+  },
   "tsh": {
     category: "Щитовидная железа",
     whatIs: "Тиреотропный гормон (ТТГ) — регуляторный гормон гипофиза, управляющий выработкой гормонов щитовидной железы.",
@@ -408,9 +433,34 @@ export const BIOMARKER_INFO_EN: Record<string, BiomarkerDetail> = {
     clinicalImpact: "Reflects mean 3-month blood glucose control; gold standard diagnostic and therapeutic metric for diabetes mellitus."
   },
   "vit_d": {
-    category: "Vitamins & Hormones",
+    category: "Vitamins & Micronutrients",
     whatIs: "25-Hydroxyvitamin D — circulating pre-hormone crucial for calcium and phosphate homeostasis.",
     clinicalImpact: "Supports bone mineral density, neuromuscular coordination, immune function, and insulin sensitivity."
+  },
+  "vit_b12": {
+    category: "Vitamins & Micronutrients",
+    whatIs: "Vitamin B12 (cobalamin) — essential water-soluble vitamin required for red blood cell synthesis, neurological function, and DNA production.",
+    clinicalImpact: "Crucial for hematopoiesis and myelin sheath integrity. Deficiency causes macrocytic anemia, peripheral neuropathy, and cognitive decline."
+  },
+  "magnesium": {
+    category: "Vitamins & Micronutrients",
+    whatIs: "Magnesium (Mg) — vital mineral cofactor in over 300 enzyme systems regulating muscle and nerve function, blood pressure, and protein synthesis.",
+    clinicalImpact: "Regulates cardiac rhythm, vascular tone, and neuromuscular transmission. Deficiency leads to cramps, arrhythmias, insomnia, and hypertension."
+  },
+  "phosphorus": {
+    category: "Vitamins & Micronutrients",
+    whatIs: "Inorganic Phosphorus (P) — key mineral component of hydroxyapatite in bones and teeth, cell membranes, and high-energy ATP molecules.",
+    clinicalImpact: "Evaluated alongside calcium and vitamin D for mineral metabolism; abnormal levels suggest renal or parathyroid dysfunction."
+  },
+  "iron": {
+    category: "Vitamins & Micronutrients",
+    whatIs: "Serum Iron (Fe) — circulating iron bound to transferrin available for hemoglobin synthesis and cellular metabolic reactions.",
+    clinicalImpact: "Reflects active iron transport. Depletion signals iron deficiency anemia; elevation suggests hemochromatosis or acute liver injury."
+  },
+  "zinc": {
+    category: "Vitamins & Micronutrients",
+    whatIs: "Zinc (Zn) — essential trace mineral crucial for cellular metabolism, immune function, DNA synthesis, wound healing, and testosterone production.",
+    clinicalImpact: "Supports immune defense, tissue regeneration, and endocrine balance. Deficiency impairs immunity and tissue repair."
   },
   "tsh": {
     category: "Thyroid Function",
@@ -495,6 +545,11 @@ export function getBiomarkerDetail(metricName: string, lang: 'ru' | 'en' = 'ru')
   else if (s.includes('пса') || s.includes('psa')) key = 'psa_total';
   else if (s.includes('гликированный') || s.includes('hba1c') || s.includes('a1c')) key = 'hba1c';
   else if (s.includes('витамин d') || s.includes('25-oh')) key = 'vit_d';
+  else if (s.includes('b12') || s.includes('в12') || s.includes('кобаламин')) key = 'vit_b12';
+  else if (s.includes('магнезий') || s.includes('магний') || s.includes('magnesium') || (s.includes('mg') && !s.includes('hgb'))) key = 'magnesium';
+  else if (s.includes('фосфор') || s.includes('phosphorus')) key = 'phosphorus';
+  else if (s.includes('сывороточное железо') || (s.includes('железо') && !s.includes('железа')) || (s.includes('iron') && !s.includes('cirrhosis'))) key = 'iron';
+  else if (s.includes('цинк') || s.includes('zinc')) key = 'zinc';
   else if (s.includes('ттг') || s.includes('tsh')) key = 'tsh';
   else if (s.includes('т4') || s.includes('ft4')) key = 'ft4';
   else if (s.includes('плотность') || s.includes('удельный') || s.includes('тегло') || s.includes('gravity')) key = 'urine_density';

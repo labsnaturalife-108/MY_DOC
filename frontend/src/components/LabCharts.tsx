@@ -20,7 +20,8 @@ import {
   Dna,
   ShieldAlert,
   Info,
-  Printer
+  Printer,
+  Pill
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -123,6 +124,21 @@ export const LabCharts: React.FC<LabChartsProps> = ({ patient }) => {
       matchPatterns: [
         "холестерин", "ЛПНП", "ЛПВП", "Триглицериды", "Липопротеин",
         "Cholesterol", "LDL", "HDL", "Triglyceride", "Lipoprotein"
+      ],
+    },
+    {
+      id: "vitamins",
+      name: t.labs.panels.vitamins.name,
+      shortName: t.labs.panels.vitamins.shortName,
+      icon: Pill,
+      goal: t.labs.panels.vitamins.goal,
+      description: t.labs.panels.vitamins.description,
+      matchPatterns: [
+        "Витамин", "Vitamin", "B12", "В12", "25-OH", "Ферритин", "Ferritin", 
+        "Железо", "Iron", "Магний", "Магнезий", "Magnesium", "Mg",
+        "Фосфор", "Phosphorus", "Кальций", "Калций", "Calcium", "Ca",
+        "Цинк", "Zinc", "Zn", "Селен", "Selenium", "Калий", "Potassium", "K",
+        "Натрий", "Sodium", "Na", "Медь", "Copper", "Фолат", "Folate"
       ],
     },
     {
