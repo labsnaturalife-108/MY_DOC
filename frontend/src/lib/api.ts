@@ -1,18 +1,73 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 export const AUTH_TOKEN_KEY = "mydoc_auth_token";
 
+// --- Fast In-Memory Client Cache (Instant Tab Switching) ---
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+const apiCache = new Map<string, CacheEntry<any>>();
+const inflightRequests = new Map<string, Promise<any>>();
+const DEFAULT_CACHE_TTL_MS = 120_000; // 2 minutes
+
+export function clearApiCache(): void {
+  apiCache.clear();
+  inflightRequests.clear();
+}
+
+export function invalidateApiCache(...prefixes: string[]): void {
+  for (const key of Array.from(apiCache.keys())) {
+    if (prefixes.some((p) => key === p || key.startsWith(p))) {
+      apiCache.delete(key);
+    }
+  }
+}
+
+async function cachedRequest<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  ttlMs: number = DEFAULT_CACHE_TTL_MS
+): Promise<T> {
+  const now = Date.now();
+  const cached = apiCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.data as T;
+  }
+
+  const inflight = inflightRequests.get(key);
+  if (inflight) {
+    return inflight as Promise<T>;
+  }
+
+  const promise = fetcher()
+    .then((data) => {
+      apiCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+      inflightRequests.delete(key);
+      return data;
+    })
+    .catch((err) => {
+      inflightRequests.delete(key);
+      throw err;
+    });
+
+  inflightRequests.set(key, promise);
+  return promise;
+}
+
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
 export function setAuthToken(token: string): void {
+  clearApiCache();
   if (typeof window !== "undefined") {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
   }
 }
 
 export function clearAuthToken(): void {
+  clearApiCache();
   if (typeof window !== "undefined") {
     localStorage.removeItem(AUTH_TOKEN_KEY);
   }
@@ -307,9 +362,11 @@ export const api = {
 
   // Patients
   async getPatients(): Promise<Patient[]> {
-    const res = await authFetch(`${API_BASE}/patients`);
-    if (!res.ok) throw new Error("Failed to fetch patients");
-    return res.json();
+    return cachedRequest("patients", async () => {
+      const res = await authFetch(`${API_BASE}/patients`);
+      if (!res.ok) throw new Error("Failed to fetch patients");
+      return res.json();
+    });
   },
 
   async createPatient(data: Partial<Patient>): Promise<Patient> {
@@ -319,6 +376,7 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to create patient");
+    invalidateApiCache("patients");
     return res.json();
   },
 
@@ -329,28 +387,35 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to update patient");
+    invalidateApiCache("patients", `prevent:${id}`);
     return res.json();
   },
 
   async deletePatient(id: number): Promise<void> {
     const res = await authFetch(`${API_BASE}/patients/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete patient");
+    invalidateApiCache("patients", `folders:${id}`, `docs:${id}`, `labs:${id}`, `sessions:${id}`, `prevent:${id}`);
   },
 
   // Folders & Documents
   async getFolders(patientId: number): Promise<Folder[]> {
-    const res = await authFetch(`${API_BASE}/patients/${patientId}/folders`);
-    if (!res.ok) throw new Error("Failed to fetch folders");
-    return res.json();
+    return cachedRequest(`folders:${patientId}`, async () => {
+      const res = await authFetch(`${API_BASE}/patients/${patientId}/folders`);
+      if (!res.ok) throw new Error("Failed to fetch folders");
+      return res.json();
+    });
   },
 
   async getDocuments(patientId: number, folderId?: number): Promise<DocumentItem[]> {
-    const url = folderId !== undefined
-      ? `${API_BASE}/patients/${patientId}/documents?folder_id=${folderId}`
-      : `${API_BASE}/patients/${patientId}/documents`;
-    const res = await authFetch(url);
-    if (!res.ok) throw new Error("Failed to fetch documents");
-    return res.json();
+    const cacheKey = `docs:${patientId}:${folderId ?? "all"}`;
+    return cachedRequest(cacheKey, async () => {
+      const url = folderId !== undefined
+        ? `${API_BASE}/patients/${patientId}/documents?folder_id=${folderId}`
+        : `${API_BASE}/patients/${patientId}/documents`;
+      const res = await authFetch(url);
+      if (!res.ok) throw new Error("Failed to fetch documents");
+      return res.json();
+    });
   },
 
   async uploadDocument(patientId: number, file: File, folderId?: number): Promise<any> {
@@ -363,6 +428,7 @@ export const api = {
       body: formData,
     });
     if (!res.ok) throw new Error("Failed to upload document");
+    invalidateApiCache(`folders:${patientId}`, `docs:${patientId}`, `labs:${patientId}`, `prevent:${patientId}`);
     return res.json();
   },
 
@@ -371,12 +437,15 @@ export const api = {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete document");
+    invalidateApiCache(`folders:${patientId}`, `docs:${patientId}`, `docDetail:${patientId}:${docId}`, `labs:${patientId}`, `prevent:${patientId}`);
   },
 
   async getDocumentDetails(patientId: number, docId: number): Promise<DocumentDetail> {
-    const res = await authFetch(`${API_BASE}/patients/${patientId}/documents/${docId}`);
-    if (!res.ok) throw new Error("Failed to fetch document details");
-    return res.json();
+    return cachedRequest(`docDetail:${patientId}:${docId}`, async () => {
+      const res = await authFetch(`${API_BASE}/patients/${patientId}/documents/${docId}`);
+      if (!res.ok) throw new Error("Failed to fetch document details");
+      return res.json();
+    });
   },
 
   getDocumentFileUrl(patientId: number, docId: number): string {
@@ -387,12 +456,15 @@ export const api = {
 
   // Lab Metrics
   async getLabMetrics(patientId: number, metricName?: string): Promise<LabMetric[]> {
-    const url = metricName
-      ? `${API_BASE}/patients/${patientId}/labs?metric_name=${encodeURIComponent(metricName)}`
-      : `${API_BASE}/patients/${patientId}/labs`;
-    const res = await authFetch(url);
-    if (!res.ok) throw new Error("Failed to fetch lab metrics");
-    return res.json();
+    const cacheKey = `labs:${patientId}:${metricName ?? "all"}`;
+    return cachedRequest(cacheKey, async () => {
+      const url = metricName
+        ? `${API_BASE}/patients/${patientId}/labs?metric_name=${encodeURIComponent(metricName)}`
+        : `${API_BASE}/patients/${patientId}/labs`;
+      const res = await authFetch(url);
+      if (!res.ok) throw new Error("Failed to fetch lab metrics");
+      return res.json();
+    });
   },
 
   async addLabMetric(patientId: number, data: Partial<LabMetric>): Promise<LabMetric> {
@@ -402,6 +474,7 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to add metric");
+    invalidateApiCache(`labs:${patientId}`, `prevent:${patientId}`);
     return res.json();
   },
 
@@ -410,6 +483,7 @@ export const api = {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete metric");
+    invalidateApiCache(`labs:${patientId}`, `prevent:${patientId}`);
   },
 
   async reparseLabs(patientId: number): Promise<{ success: boolean; total_metrics: number }> {
@@ -417,14 +491,17 @@ export const api = {
       method: "POST",
     });
     if (!res.ok) throw new Error("Failed to reparse lab metrics");
+    invalidateApiCache(`labs:${patientId}`, `prevent:${patientId}`);
     return res.json();
   },
 
   // Chat
   async getChatSessions(patientId: number): Promise<ChatSession[]> {
-    const res = await authFetch(`${API_BASE}/patients/${patientId}/chat/sessions`);
-    if (!res.ok) throw new Error("Failed to fetch sessions");
-    return res.json();
+    return cachedRequest(`sessions:${patientId}`, async () => {
+      const res = await authFetch(`${API_BASE}/patients/${patientId}/chat/sessions`);
+      if (!res.ok) throw new Error("Failed to fetch sessions");
+      return res.json();
+    });
   },
 
   async createChatSession(patientId: number, data: { title?: string; model_id?: string; provider?: string }): Promise<ChatSession> {
@@ -434,18 +511,22 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to create session");
+    invalidateApiCache(`sessions:${patientId}`);
     return res.json();
   },
 
   async getChatMessages(sessionId: number): Promise<ChatMessage[]> {
-    const res = await authFetch(`${API_BASE}/chat/sessions/${sessionId}/messages`);
-    if (!res.ok) throw new Error("Failed to fetch messages");
-    return res.json();
+    return cachedRequest(`messages:${sessionId}`, async () => {
+      const res = await authFetch(`${API_BASE}/chat/sessions/${sessionId}/messages`);
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    });
   },
 
   async deleteChatSession(sessionId: number): Promise<void> {
     const res = await authFetch(`${API_BASE}/chat/sessions/${sessionId}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete session");
+    invalidateApiCache("sessions:", `messages:${sessionId}`);
   },
 
   async updateChatSession(sessionId: number, data: { model_id?: string; provider?: string; title?: string }): Promise<ChatSession> {
@@ -455,14 +536,17 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to update session");
+    invalidateApiCache("sessions:");
     return res.json();
   },
 
   // Models & Settings
   async getModels(): Promise<AIModel[]> {
-    const res = await authFetch(`${API_BASE}/models`);
-    if (!res.ok) throw new Error("Failed to fetch models");
-    return res.json();
+    return cachedRequest("models", async () => {
+      const res = await authFetch(`${API_BASE}/models`);
+      if (!res.ok) throw new Error("Failed to fetch models");
+      return res.json();
+    }, 300_000);
   },
 
   async checkLocalServers(): Promise<{ lmstudio: any; ollama: any }> {
@@ -472,9 +556,11 @@ export const api = {
   },
 
   async getSettings(): Promise<Record<string, string>> {
-    const res = await authFetch(`${API_BASE}/settings`);
-    if (!res.ok) throw new Error("Failed to fetch settings");
-    return res.json();
+    return cachedRequest("settings", async () => {
+      const res = await authFetch(`${API_BASE}/settings`);
+      if (!res.ok) throw new Error("Failed to fetch settings");
+      return res.json();
+    });
   },
 
   async saveSetting(key: string, value: string): Promise<void> {
@@ -484,13 +570,16 @@ export const api = {
       body: JSON.stringify({ key, value }),
     });
     if (!res.ok) throw new Error("Failed to save setting");
+    invalidateApiCache("settings", "models");
   },
 
   // PREVENT Calculator
   async getPreventParams(patientId: number): Promise<PreventParamsResponse> {
-    const res = await authFetch(`${API_BASE}/patients/${patientId}/prevent-params`);
-    if (!res.ok) throw new Error("Failed to fetch PREVENT parameters");
-    return res.json();
+    return cachedRequest(`prevent:${patientId}`, async () => {
+      const res = await authFetch(`${API_BASE}/patients/${patientId}/prevent-params`);
+      if (!res.ok) throw new Error("Failed to fetch PREVENT parameters");
+      return res.json();
+    });
   },
 
   async calculatePreventRisk(patientId: number, params: Partial<PreventInputs>): Promise<PreventRiskResult> {

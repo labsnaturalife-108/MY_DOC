@@ -146,6 +146,18 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [user?.id]);
 
+  // Background cache warm-up so switching tabs (Folders, Labs, PREVENT) is instant
+  useEffect(() => {
+    if (!activePatient?.id) return;
+    const pid = activePatient.id;
+    Promise.allSettled([
+      api.getFolders(pid),
+      api.getDocuments(pid),
+      api.getLabMetrics(pid),
+      api.getPreventParams(pid),
+    ]);
+  }, [activePatient?.id]);
+
   const handleSelectPatient = async (p: Patient) => {
     setActivePatient(p);
     await loadSessionsForPatient(p.id);

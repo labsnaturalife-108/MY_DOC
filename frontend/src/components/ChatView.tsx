@@ -24,7 +24,7 @@ import {
   Key,
   Cloud
 } from "lucide-react";
-import { Patient, ChatSession, ChatMessage, AIModel, api, API_BASE, authFetch } from "@/lib/api";
+import { Patient, ChatSession, ChatMessage, AIModel, api, API_BASE, authFetch, invalidateApiCache } from "@/lib/api";
 import { MedicalMarkdown } from "./MedicalMarkdown";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -264,6 +264,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         }
       }
 
+      invalidateApiCache(`messages:${session.id}`, `sessions:${patient.id}`);
       await loadMessages();
     } catch (err: any) {
       alert((language === "ru" ? "Ошибка отправки: " : "Error sending message: ") + err.message);
