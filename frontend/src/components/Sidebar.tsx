@@ -19,7 +19,8 @@ import {
   PanelLeftOpen,
   Utensils,
   Activity,
-  LogOut
+  LogOut,
+  Shield
 } from "lucide-react";
 import { Patient, ChatSession, AuthUser } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -42,6 +43,7 @@ interface SidebarProps {
   onDeletePatient?: (p: Patient) => void;
   user?: AuthUser | null;
   onLogout?: () => void;
+  onOpenAdminMonitor?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -60,7 +62,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isLocalOnline,
   onDeletePatient,
   user,
-  onLogout
+  onLogout,
+  onOpenAdminMonitor
 }) => {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { language, t } = useLanguage();
@@ -300,6 +303,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Settings className="w-4 h-4" />
             </button>
+
+            {user?.is_admin && onOpenAdminMonitor && (
+              <button
+                onClick={onOpenAdminMonitor}
+                title={language === "ru" ? "Монитор владельца" : "Owner Monitor"}
+                className="p-2 hover:bg-indigo-100 dark:hover:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-lg transition"
+              >
+                <Shield className="w-4 h-4" />
+              </button>
+            )}
 
             {onLogout && (
               <button
@@ -597,15 +610,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </p>
                 </div>
               </div>
-              {onLogout && (
-                <button
-                  onClick={onLogout}
-                  title={language === "ru" ? "Выйти из аккаунта" : "Sign out"}
-                  className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 flex items-center gap-1 text-xs font-medium"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {user.is_admin && onOpenAdminMonitor && (
+                  <button
+                    onClick={onOpenAdminMonitor}
+                    title={language === "ru" ? "Монитор владельца (статистика)" : "Owner Monitor (analytics)"}
+                    className="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition flex items-center gap-1 text-xs font-semibold"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {onLogout && (
+                  <button
+                    onClick={onLogout}
+                    title={language === "ru" ? "Выйти из аккаунта" : "Sign out"}
+                    className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center gap-1 text-xs font-medium"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

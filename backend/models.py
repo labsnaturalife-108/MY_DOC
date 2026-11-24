@@ -13,11 +13,26 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    last_login_at = Column(DateTime, nullable=True)
+    login_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     patients = relationship("Patient", back_populates="owner", cascade="all, delete-orphan")
     settings = relationship("AppSetting", back_populates="owner", cascade="all, delete-orphan")
+
+
+class AuthEvent(Base):
+    __tablename__ = "auth_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    email = Column(String(255), nullable=True, index=True)
+    event_type = Column(String(30), nullable=False, index=True)  # visit, register, login
+    ip_address = Column(String(100), nullable=True)
+    user_agent = Column(String(512), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
 class Patient(Base):

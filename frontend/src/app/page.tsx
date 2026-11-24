@@ -10,6 +10,7 @@ import { PreventCalculatorView } from "@/components/PreventCalculatorView";
 import { NutritionView } from "@/components/NutritionView";
 import { LifestyleView } from "@/components/LifestyleView";
 import { SettingsModal } from "@/components/SettingsModal";
+import { AdminMonitorModal } from "@/components/AdminMonitorModal";
 import { AuthView } from "@/components/AuthView";
 import { Patient, ChatSession, api } from "@/lib/api";
 import { User, UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-react";
@@ -25,6 +26,7 @@ export default function Home() {
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>("chat"); // chat, profile, folders, labs, prevent
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAdminMonitorOpen, setIsAdminMonitorOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeletingPatient, setIsDeletingPatient] = useState(false);
@@ -100,12 +102,20 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined" && !sessionStorage.getItem("mydoc_visit_logged")) {
+      sessionStorage.setItem("mydoc_visit_logged", "1");
+      api.trackVisit();
+    }
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       setPatients([]);
       setActivePatient(null);
       setChatSessions([]);
       setActiveSessionId(null);
       setIsSettingsOpen(false);
+      setIsAdminMonitorOpen(false);
       setLoading(false);
       return;
     }
@@ -275,6 +285,7 @@ export default function Home() {
         onDeletePatient={(p) => setPatientToDelete(p)}
         user={user}
         onLogout={logout}
+        onOpenAdminMonitor={() => setIsAdminMonitorOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -634,6 +645,14 @@ export default function Home() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Owner Admin Monitor Modal */}
+      {user?.is_admin && (
+        <AdminMonitorModal
+          isOpen={isAdminMonitorOpen}
+          onClose={() => setIsAdminMonitorOpen(false)}
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import os
 import shutil
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +17,8 @@ from .auth import (
     create_access_token,
     get_current_user,
     get_current_user_or_query,
+    require_admin,
+    is_user_admin,
     normalize_email,
     validate_email,
 )
@@ -92,9 +94,32 @@ def get_owned_session(db: Session, session_id: int, user_id: int) -> models.Chat
 def health():
     return {"status": "ok", "app": "MY_DOC", "timestamp": datetime.utcnow().isoformat()}
 
+def _get_client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()[:100]
+    if request.client and request.client.host:
+        return request.client.host[:100]
+    return "unknown"
+
+def _record_auth_event(db: Session, event_type: str, request: Request, user: Optional[models.User] = None):
+    try:
+        ev = models.AuthEvent(
+            user_id=user.id if user else None,
+            email=user.email if user else None,
+            event_type=event_type,
+            ip_address=_get_client_ip(request),
+            user_agent=(request.headers.get("user-agent") or "")[:500],
+        )
+        db.add(ev)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[Analytics] Event log warning: {e}")
+
 # --- Auth Endpoints ---
 @app.post("/api/auth/register", response_model=schemas.AuthTokenResponse)
-def register_user(data: schemas.UserRegister, db: Session = Depends(get_db)):
+def register_user(data: schemas.UserRegister, request: Request, db: Session = Depends(get_db)):
     email = normalize_email(data.email)
     if not validate_email(email):
         raise HTTPException(status_code=400, detail="Некорректный формат email")
@@ -106,12 +131,18 @@ def register_user(data: schemas.UserRegister, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Пользователь с таким email уже зарегистрирован")
 
     is_first_user = db.query(models.User).count() == 0
+    admin_env = normalize_email(os.environ.get("MYDOC_ADMIN_EMAIL", ""))
+    should_be_admin = is_first_user or (bool(admin_env) and email == admin_env)
+    now = datetime.utcnow()
 
     user = models.User(
         email=email,
         password_hash=hash_password(data.password),
         full_name=(data.full_name or "").strip() or None,
-        is_active=True
+        is_active=True,
+        is_admin=should_be_admin,
+        last_login_at=now,
+        login_count=1,
     )
     db.add(user)
     db.commit()
@@ -127,15 +158,23 @@ def register_user(data: schemas.UserRegister, db: Session = Depends(get_db)):
         )
         db.commit()
 
+    _record_auth_event(db, "register", request, user)
+
     token = create_access_token(user.id, user.email)
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": user
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_admin": is_user_admin(user),
+            "created_at": user.created_at,
+        }
     }
 
 @app.post("/api/auth/login", response_model=schemas.AuthTokenResponse)
-def login_user(data: schemas.UserLogin, db: Session = Depends(get_db)):
+def login_user(data: schemas.UserLogin, request: Request, db: Session = Depends(get_db)):
     email = normalize_email(data.email)
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not verify_password(data.password, user.password_hash):
@@ -143,16 +182,154 @@ def login_user(data: schemas.UserLogin, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Аккаунт деактивирован")
 
+    user.last_login_at = datetime.utcnow()
+    user.login_count = (user.login_count or 0) + 1
+    db.commit()
+    db.refresh(user)
+
+    _record_auth_event(db, "login", request, user)
+
     token = create_access_token(user.id, user.email)
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": user
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "is_admin": is_user_admin(user),
+            "created_at": user.created_at,
+        }
     }
 
 @app.get("/api/auth/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_admin": is_user_admin(current_user),
+        "created_at": current_user.created_at,
+    }
+
+# --- Public Visit Tracking & Owner Admin Monitor ---
+@app.post("/api/analytics/visit")
+def track_visit(request: Request, db: Session = Depends(get_db)):
+    _record_auth_event(db, "visit", request, None)
+    return {"ok": True}
+
+@app.get("/api/admin/stats")
+def get_admin_stats(
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin),
+):
+    now = datetime.utcnow()
+    today_start = datetime(now.year, now.month, now.day)
+    week_start = today_start - timedelta(days=6)
+    two_weeks_start = today_start - timedelta(days=13)
+
+    all_users = db.query(models.User).order_by(models.User.created_at.desc()).all()
+    total_users = len(all_users)
+    new_users_today = sum(1 for u in all_users if u.created_at and u.created_at >= today_start)
+    new_users_7d = sum(1 for u in all_users if u.created_at and u.created_at >= week_start)
+
+    visits_total = db.query(models.AuthEvent).filter(models.AuthEvent.event_type == "visit").count()
+    visits_today = db.query(models.AuthEvent).filter(
+        models.AuthEvent.event_type == "visit",
+        models.AuthEvent.created_at >= today_start,
+    ).count()
+    visits_7d = db.query(models.AuthEvent).filter(
+        models.AuthEvent.event_type == "visit",
+        models.AuthEvent.created_at >= week_start,
+    ).count()
+
+    logins_today = db.query(models.AuthEvent).filter(
+        models.AuthEvent.event_type == "login",
+        models.AuthEvent.created_at >= today_start,
+    ).count()
+    logins_7d = db.query(models.AuthEvent).filter(
+        models.AuthEvent.event_type == "login",
+        models.AuthEvent.created_at >= week_start,
+    ).count()
+
+    total_patients = db.query(models.Patient).count()
+    total_documents = db.query(models.Document).count()
+    total_sessions = db.query(models.ChatSession).count()
+    total_messages = db.query(models.ChatMessage).count()
+
+    # Daily breakdown for the last 14 days
+    recent_14d_events = db.query(models.AuthEvent).filter(
+        models.AuthEvent.created_at >= two_weeks_start
+    ).all()
+    daily_map = {}
+    for i in range(14):
+        d = (two_weeks_start + timedelta(days=i)).strftime("%Y-%m-%d")
+        daily_map[d] = {"date": d, "visits": 0, "logins": 0, "registrations": 0}
+
+    for ev in recent_14d_events:
+        if not ev.created_at:
+            continue
+        d = ev.created_at.strftime("%Y-%m-%d")
+        if d in daily_map:
+            if ev.event_type == "visit":
+                daily_map[d]["visits"] += 1
+            elif ev.event_type == "login":
+                daily_map[d]["logins"] += 1
+            elif ev.event_type == "register":
+                daily_map[d]["registrations"] += 1
+
+    # Per-user activity counts (metadata only, zero private medical content)
+    users_list = []
+    for u in all_users:
+        p_ids = [r[0] for r in db.query(models.Patient.id).filter(models.Patient.user_id == u.id).all()]
+        doc_cnt = db.query(models.Document).filter(models.Document.patient_id.in_(p_ids)).count() if p_ids else 0
+        sess_ids = [r[0] for r in db.query(models.ChatSession.id).filter(models.ChatSession.patient_id.in_(p_ids)).all()] if p_ids else []
+        msg_cnt = db.query(models.ChatMessage).filter(models.ChatMessage.session_id.in_(sess_ids)).count() if sess_ids else 0
+        users_list.append({
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "is_admin": is_user_admin(u),
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "last_login_at": u.last_login_at.isoformat() if u.last_login_at else None,
+            "login_count": u.login_count or 0,
+            "patients_count": len(p_ids),
+            "documents_count": doc_cnt,
+            "messages_count": msg_cnt,
+        })
+
+    recent_events = db.query(models.AuthEvent).order_by(models.AuthEvent.created_at.desc()).limit(60).all()
+    events_list = [
+        {
+            "id": ev.id,
+            "event_type": ev.event_type,
+            "email": ev.email,
+            "ip_address": ev.ip_address,
+            "user_agent": ev.user_agent,
+            "created_at": ev.created_at.isoformat() if ev.created_at else None,
+        }
+        for ev in recent_events
+    ]
+
+    return {
+        "summary": {
+            "total_users": total_users,
+            "new_users_today": new_users_today,
+            "new_users_7d": new_users_7d,
+            "visits_total": visits_total,
+            "visits_today": visits_today,
+            "visits_7d": visits_7d,
+            "logins_today": logins_today,
+            "logins_7d": logins_7d,
+            "total_patients": total_patients,
+            "total_documents": total_documents,
+            "total_sessions": total_sessions,
+            "total_messages": total_messages,
+        },
+        "daily": list(daily_map.values()),
+        "users": users_list,
+        "recent_events": events_list,
+    }
 
 # --- Patient Endpoints ---
 @app.get("/api/patients", response_model=List[schemas.PatientResponse])

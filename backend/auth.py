@@ -187,3 +187,19 @@ def get_current_user_or_query(
     """Allows auth via Bearer header OR ?token=... query param (for PDF/image previews & downloads)."""
     bearer = _extract_bearer_token(authorization)
     return _resolve_user_from_token(bearer or token, db)
+
+
+def is_user_admin(user: models.User) -> bool:
+    if getattr(user, "is_admin", False):
+        return True
+    admin_email = normalize_email(os.environ.get("MYDOC_ADMIN_EMAIL", ""))
+    return bool(admin_email and normalize_email(user.email) == admin_email)
+
+
+def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if not is_user_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Доступ только для владельца (администратора)",
+        )
+    return current_user

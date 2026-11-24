@@ -39,7 +39,51 @@ export interface AuthUser {
   id: number;
   email: string;
   full_name?: string | null;
+  is_admin?: boolean;
   created_at: string;
+}
+
+export interface AdminStatsResponse {
+  summary: {
+    total_users: number;
+    new_users_today: number;
+    new_users_7d: number;
+    visits_total: number;
+    visits_today: number;
+    visits_7d: number;
+    logins_today: number;
+    logins_7d: number;
+    total_patients: number;
+    total_documents: number;
+    total_sessions: number;
+    total_messages: number;
+  };
+  daily: {
+    date: string;
+    visits: number;
+    logins: number;
+    registrations: number;
+  }[];
+  users: {
+    id: number;
+    email: string;
+    full_name?: string | null;
+    is_admin: boolean;
+    created_at?: string | null;
+    last_login_at?: string | null;
+    login_count: number;
+    patients_count: number;
+    documents_count: number;
+    messages_count: number;
+  }[];
+  recent_events: {
+    id: number;
+    event_type: "visit" | "login" | "register" | string;
+    email?: string | null;
+    ip_address?: string | null;
+    user_agent?: string | null;
+    created_at?: string | null;
+  }[];
 }
 
 export interface AuthResponse {
@@ -202,6 +246,20 @@ export const api = {
   async getMe(): Promise<AuthUser> {
     const res = await authFetch(`${API_BASE}/auth/me`);
     if (!res.ok) throw new Error("Not authenticated");
+    return res.json();
+  },
+
+  async trackVisit(): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/analytics/visit`, { method: "POST" });
+    } catch {
+      // ignore analytics errors
+    }
+  },
+
+  async getAdminStats(): Promise<AdminStatsResponse> {
+    const res = await authFetch(`${API_BASE}/admin/stats`);
+    if (!res.ok) throw new Error("Failed to fetch admin stats");
     return res.json();
   },
 
