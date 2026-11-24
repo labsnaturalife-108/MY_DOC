@@ -249,6 +249,32 @@ export const api = {
     return res.json();
   },
 
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Не удалось отправить код восстановления");
+    }
+    return res.json();
+  },
+
+  async resetPassword(data: { email: string; code: string; new_password: string }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Неверный или истёкший код восстановления");
+    }
+    return res.json();
+  },
+
   async trackVisit(): Promise<void> {
     try {
       await fetch(`${API_BASE}/analytics/visit`, { method: "POST" });

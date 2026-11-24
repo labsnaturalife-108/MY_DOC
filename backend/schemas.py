@@ -27,6 +27,14 @@ class AuthTokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str = Field(..., min_length=4, max_length=12)
+    new_password: str = Field(..., min_length=6, max_length=128)
+
 # --- Patient Schemas ---
 class PatientBase(BaseModel):
     full_name: str

@@ -1,6 +1,8 @@
 import os
 import shutil
 import json
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
@@ -27,6 +29,7 @@ from .rag_engine import rag_engine
 from .llm_hub import llm_hub
 from .prevent_calculator import extract_prevent_inputs, calculate_prevent_risk
 from .pubmed_service import pubmed_service
+from .email_service import is_email_configured, send_password_reset_email
 
 # Create database tables & run safe auth migrations for existing databases
 Base.metadata.create_all(bind=engine)
@@ -226,12 +229,92 @@ def _delete_user_completely(db: Session, user: models.User):
                 shutil.rmtree(patient_dir)
             except Exception:
                 pass
-    # Detach auth_events FK before deleting user (required by PostgreSQL FK constraint)
+    # Detach auth_events FK & remove reset tokens before deleting user (PostgreSQL FK constraint)
     db.query(models.AuthEvent).filter(models.AuthEvent.user_id == user.id).update(
         {models.AuthEvent.user_id: None}, synchronize_session=False
     )
+    db.query(models.PasswordResetToken).filter(models.PasswordResetToken.user_id == user.id).delete(
+        synchronize_session=False
+    )
     db.delete(user)
     db.commit()
+
+@app.post("/api/auth/forgot-password")
+def forgot_password(data: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = normalize_email(data.email)
+    if not validate_email(email):
+        raise HTTPException(status_code=400, detail="Некорректный формат email")
+
+    if not is_email_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Отправка писем пока не настроена на сервере. Добавьте RESEND_API_KEY или SMTP настройки в Vercel."
+        )
+
+    user = db.query(models.User).filter(models.User.email == email, models.User.is_active == True).first()
+    if user:
+        # Invalidate previous unused codes for this user
+        db.query(models.PasswordResetToken).filter(
+            models.PasswordResetToken.user_id == user.id,
+            models.PasswordResetToken.used == False
+        ).update({models.PasswordResetToken.used: True}, synchronize_session=False)
+
+        code = f"{secrets.randbelow(900000) + 100000}"
+        code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+        token_row = models.PasswordResetToken(
+            user_id=user.id,
+            code_hash=code_hash,
+            expires_at=datetime.utcnow() + timedelta(minutes=15),
+            used=False,
+        )
+        db.add(token_row)
+        db.commit()
+
+        sent = send_password_reset_email(user.email, code)
+        if not sent:
+            raise HTTPException(
+                status_code=500,
+                detail="Не удалось отправить письмо с кодом. Проверьте настройки почтового сервиса."
+            )
+
+    return {
+        "success": True,
+        "message": "Если аккаунт с таким email существует, мы отправили 6-значный код восстановления на вашу почту."
+    }
+
+@app.post("/api/auth/reset-password")
+def reset_password(data: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = normalize_email(data.email)
+    code = (data.code or "").strip()
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Пароль должен содержать минимум 6 символов")
+
+    user = db.query(models.User).filter(models.User.email == email, models.User.is_active == True).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Неверный или истёкший код восстановления")
+
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    now = datetime.utcnow()
+    token_row = (
+        db.query(models.PasswordResetToken)
+        .filter(
+            models.PasswordResetToken.user_id == user.id,
+            models.PasswordResetToken.code_hash == code_hash,
+            models.PasswordResetToken.used == False,
+            models.PasswordResetToken.expires_at >= now,
+        )
+        .order_by(models.PasswordResetToken.created_at.desc())
+        .first()
+    )
+    if not token_row:
+        raise HTTPException(status_code=400, detail="Неверный или истёкший код восстановления")
+
+    user.password_hash = hash_password(data.new_password)
+    user.updated_at = now
+    token_row.used = True
+    db.commit()
+
+    return {"success": True, "message": "Пароль успешно изменён! Теперь вы можете войти с новым паролем."}
 
 @app.delete("/api/auth/me")
 def delete_my_account(
