@@ -583,6 +583,19 @@ export const api = {
     invalidateApiCache("settings", "models");
   },
 
+  // MCP Connection
+  async getMcpToken(): Promise<{ token: string; mcp_url: string; mcp_base_url: string }> {
+    const res = await authFetch(`${API_BASE}/mcp/token`);
+    if (!res.ok) throw new Error("Failed to load MCP token");
+    return res.json();
+  },
+
+  async rotateMcpToken(): Promise<{ token: string; mcp_url: string; mcp_base_url: string }> {
+    const res = await authFetch(`${API_BASE}/mcp/token`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to rotate MCP token");
+    return res.json();
+  },
+
   // PREVENT Calculator
   async getPreventParams(patientId: number): Promise<PreventParamsResponse> {
     return cachedRequest(`prevent:${patientId}`, async () => {

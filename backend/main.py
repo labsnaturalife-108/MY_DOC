@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -30,6 +30,7 @@ from .llm_hub import llm_hub
 from .prevent_calculator import extract_prevent_inputs, calculate_prevent_risk
 from .pubmed_service import pubmed_service
 from .email_service import is_email_configured, send_password_reset_email
+from .mcp_server import handle_mcp_jsonrpc
 
 # Create database tables & run safe auth migrations for existing databases
 Base.metadata.create_all(bind=engine)
@@ -1311,7 +1312,7 @@ def get_settings(
     # Mask secret keys for safety
     res = {}
     for s in settings:
-        if "api_key" in s.key and s.value:
+        if ("api_key" in s.key or "mcp_access_token" in s.key) and s.value:
             res[s.key] = s.value[:4] + "..." + s.value[-4:] if len(s.value) > 8 else "****"
         else:
             res[s.key] = s.value
@@ -1334,3 +1335,124 @@ def update_settings(
         setting.value = data.value
     db.commit()
     return {"success": True, "key": data.key}
+
+# --- MCP Server (Model Context Protocol for ChatGPT / Claude / Gemini / Cursor) ---
+def _get_or_create_mcp_token(db: Session, user_id: int, rotate: bool = False) -> str:
+    row = db.query(models.AppSetting).filter(
+        models.AppSetting.user_id == user_id,
+        models.AppSetting.key == "mcp_access_token",
+    ).first()
+    if row and row.value and not rotate:
+        return row.value
+    new_token = f"mydoc_mcp_{secrets.token_urlsafe(28)}"
+    if not row:
+        row = models.AppSetting(
+            user_id=user_id,
+            key="mcp_access_token",
+            value=new_token,
+            description="Personal MCP Server access token",
+        )
+        db.add(row)
+    else:
+        row.value = new_token
+    db.commit()
+    return new_token
+
+def _resolve_mcp_user(request: Request, token_query: Optional[str], db: Session) -> models.User:
+    auth_header = request.headers.get("authorization") or ""
+    raw_token = None
+    if auth_header.lower().startswith("bearer "):
+        raw_token = auth_header.split(" ", 1)[1].strip()
+    if not raw_token and token_query:
+        raw_token = token_query.strip()
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="MCP access token required (Bearer header or ?token=...)")
+
+    setting = db.query(models.AppSetting).filter(
+        models.AppSetting.key == "mcp_access_token",
+        models.AppSetting.value == raw_token,
+    ).first()
+    if not setting or not setting.user_id:
+        raise HTTPException(status_code=401, detail="Invalid or revoked MCP access token")
+
+    user = db.query(models.User).filter(
+        models.User.id == setting.user_id,
+        models.User.is_active == True,
+    ).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Account inactive or not found")
+    return user
+
+@app.get("/api/mcp/token")
+def get_mcp_token(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    token = _get_or_create_mcp_token(db, current_user.id, rotate=False)
+    base_url = str(request.base_url).rstrip("/")
+    return {
+        "token": token,
+        "mcp_url": f"{base_url}/api/mcp?token={token}",
+        "mcp_base_url": f"{base_url}/api/mcp",
+    }
+
+@app.post("/api/mcp/token")
+def rotate_mcp_token(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    token = _get_or_create_mcp_token(db, current_user.id, rotate=True)
+    base_url = str(request.base_url).rstrip("/")
+    return {
+        "token": token,
+        "mcp_url": f"{base_url}/api/mcp?token={token}",
+        "mcp_base_url": f"{base_url}/api/mcp",
+    }
+
+@app.get("/api/mcp")
+def mcp_info():
+    return {
+        "name": "MY_DOC Medical Assistant MCP Server",
+        "protocol": "Model Context Protocol (Streamable HTTP / JSON-RPC 2.0)",
+        "endpoint": "/api/mcp",
+        "auth": "Pass your personal MCP token via 'Authorization: Bearer <token>' or '?token=<token>'",
+    }
+
+@app.post("/api/mcp")
+async def mcp_endpoint(
+    request: Request,
+    token: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    user = _resolve_mcp_user(request, token, db)
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(
+            status_code=400,
+            content={"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
+        )
+
+    if isinstance(body, list):
+        responses = []
+        for item in body:
+            if isinstance(item, dict):
+                r = await handle_mcp_jsonrpc(item, user, db)
+                if r is not None:
+                    responses.append(r)
+        if not responses:
+            return Response(status_code=202)
+        return JSONResponse(content=responses)
+
+    if isinstance(body, dict):
+        resp = await handle_mcp_jsonrpc(body, user, db)
+        if resp is None:
+            return Response(status_code=202)
+        return JSONResponse(content=resp)
+
+    return JSONResponse(
+        status_code=400,
+        content={"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "Invalid Request"}},
+    )

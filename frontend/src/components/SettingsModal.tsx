@@ -19,7 +19,9 @@ import {
   Trash2, 
   ExternalLink, 
   ShieldCheck,
-  Loader2
+  Loader2,
+  Plug,
+  Copy
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -65,10 +67,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
   const [testing, setTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [mcpInfo, setMcpInfo] = useState<{ token: string; mcp_url: string; mcp_base_url: string } | null>(null);
+  const [mcpLoading, setMcpLoading] = useState(false);
+  const [mcpCopied, setMcpCopied] = useState<"url" | "json" | null>(null);
+  const [showMcpJson, setShowMcpJson] = useState(false);
+
+  const loadMcpInfo = async () => {
+    try {
+      const data = await api.getMcpToken();
+      setMcpInfo(data);
+    } catch (err) {
+      console.error("MCP token load error:", err);
+    }
+  };
+
+  const handleRotateMcpToken = async () => {
+    setMcpLoading(true);
+    try {
+      const data = await api.rotateMcpToken();
+      setMcpInfo(data);
+    } catch (err: any) {
+      alert(err?.message || "Ошибка обновления MCP-токена");
+    } finally {
+      setMcpLoading(false);
+    }
+  };
+
+  const copyMcpText = (text: string, kind: "url" | "json") => {
+    navigator.clipboard?.writeText(text);
+    setMcpCopied(kind);
+    setTimeout(() => setMcpCopied(null), 1800);
+  };
 
   useEffect(() => {
     if (isOpen) {
       loadCurrentSettings();
+      loadMcpInfo();
     }
   }, [isOpen]);
 
@@ -587,6 +621,110 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 />
               </div>
             </div>
+          </div>
+
+          {/* Section: MCP Server Connection (ChatGPT / Claude / Gemini without API keys) */}
+          <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Plug className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  {language === "ru"
+                    ? "Подключение через MCP (ChatGPT / Claude / Gemini без API-ключей)"
+                    : "Connect via MCP (ChatGPT / Claude / Gemini without API keys)"}
+                </span>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                  {language === "ru"
+                    ? "Используйте свою обычную подписку ChatGPT, Claude, Gemini CLI или Cursor — ИИ сможет напрямую читать ваши анализы, медкарту и считать риски PREVENT без покупки API-ключей."
+                    : "Connect your regular ChatGPT, Claude, Gemini CLI, or Cursor account — the AI can directly read your lab results, patient profile, and calculate PREVENT risk with zero API keys."}
+                </p>
+              </div>
+            </div>
+
+            {mcpInfo ? (
+              <div className="space-y-2.5">
+                <div>
+                  <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">
+                    {language === "ru" ? "Ваш персональный MCP URL (вставьте в ChatGPT / Claude)" : "Your Personal MCP Server URL"}
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      readOnly
+                      value={mcpInfo.mcp_url}
+                      className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono outline-none select-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyMcpText(mcpInfo.mcp_url, "url")}
+                      className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 text-xs font-semibold flex items-center gap-1 transition shrink-0"
+                    >
+                      {mcpCopied === "url" ? <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{mcpCopied === "url" ? (language === "ru" ? "Скопировано" : "Copied") : (language === "ru" ? "Копировать" : "Copy")}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowMcpJson((v) => !v)}
+                    className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    {showMcpJson
+                      ? (language === "ru" ? "Скрыть JSON конфиг (Cursor / Gemini / Claude)" : "Hide JSON config")
+                      : (language === "ru" ? "Показать JSON конфиг (Cursor / Gemini / Claude)" : "Show JSON config (Cursor / Gemini / Claude)")}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={mcpLoading}
+                    onClick={handleRotateMcpToken}
+                    className="text-[11px] font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-1 transition disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${mcpLoading ? "animate-spin" : ""}`} />
+                    <span>{language === "ru" ? "Перевыпустить токен" : "Rotate token"}</span>
+                  </button>
+                </div>
+
+                {showMcpJson && (() => {
+                  const jsonConfig = JSON.stringify(
+                    {
+                      mcpServers: {
+                        "my-doc": {
+                          url: mcpInfo.mcp_base_url,
+                          headers: {
+                            Authorization: `Bearer ${mcpInfo.token}`,
+                          },
+                        },
+                      },
+                    },
+                    null,
+                    2
+                  );
+                  return (
+                    <div className="relative">
+                      <pre className="p-3 rounded-xl bg-zinc-900 text-zinc-100 text-[11px] font-mono overflow-x-auto border border-zinc-800">
+                        {jsonConfig}
+                      </pre>
+                      <button
+                        type="button"
+                        onClick={() => copyMcpText(jsonConfig, "json")}
+                        className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[10px] font-semibold flex items-center gap-1 transition"
+                      >
+                        {mcpCopied === "json" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{mcpCopied === "json" ? (language === "ru" ? "Скопировано" : "Copied") : "JSON"}</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-zinc-500 py-1">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>{language === "ru" ? "Загрузка MCP-токена..." : "Loading MCP token..."}</span>
+              </div>
+            )}
           </div>
 
           {/* Account Danger Zone */}
