@@ -1,7 +1,10 @@
 import re
 import os
+import json
+import base64
 from typing import List, Dict, Any, Optional
 from pypdf import PdfReader
+import httpx
 
 # Comprehensive definitions of all medical biomarker panels
 # (Panel, Canonical Name, Default Unit, Default Min, Default Max, Regex Patterns)
@@ -166,8 +169,130 @@ BIOMARKER_DEFS = [
     ]),
 ]
 
-def extract_text_from_image(filepath: str) -> str:
-    """Uses macOS Apple Vision framework to OCR images accurately in Russian, English, Bulgarian."""
+def _guess_mime_type(filename: str) -> str:
+    ext = (filename.lower().split(".")[-1] if "." in filename else "").strip()
+    return {
+        "pdf": "application/pdf",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+        "tiff": "image/tiff",
+        "bmp": "image/bmp",
+    }.get(ext, "application/octet-stream")
+
+
+def _ocr_with_gemini(filepath: str, mime_type: str, api_key: str) -> str:
+    """Uses Google Gemini multimodal API to accurately OCR medical images and scanned PDFs."""
+    if not api_key:
+        return ""
+    try:
+        with open(filepath, "rb") as f:
+            b64_data = base64.b64encode(f.read()).decode("ascii")
+        prompt = (
+            "Transcribe ALL text and laboratory results from this medical document accurately. "
+            "Preserve the test date clearly (YYYY-MM-DD if visible). "
+            "Format EVERY biomarker on its own single horizontal line as: "
+            "MetricName: Value Unit (Ref: Min - Max). "
+            "Do not add explanations or markdown fences, output only the transcribed document text."
+        )
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": mime_type, "data": b64_data}},
+                    ]
+                }
+            ],
+            "generationConfig": {"temperature": 0.0, "maxOutputTokens": 4096},
+        }
+        for model in ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            resp = httpx.post(url, json=payload, timeout=40.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates") or []
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts") or []
+                    text = "\n".join(p.get("text", "") for p in parts if p.get("text")).strip()
+                    if text:
+                        return text
+            elif resp.status_code in (400, 401, 403):
+                print(f"[Gemini OCR] Auth/request error ({resp.status_code}): {resp.text[:200]}")
+                break
+    except Exception as e:
+        print(f"[Gemini OCR error]: {e}")
+    return ""
+
+
+def _ocr_with_openai(filepath: str, mime_type: str, api_key: str) -> str:
+    """Uses OpenAI GPT-4o-mini Vision to OCR medical images."""
+    if not api_key or not mime_type.startswith("image/"):
+        return ""
+    try:
+        with open(filepath, "rb") as f:
+            b64_data = base64.b64encode(f.read()).decode("ascii")
+        resp = httpx.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": "gpt-4o-mini",
+                "temperature": 0,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Transcribe ALL text and lab results from this medical document. "
+                                    "Put each biomarker on its own line: MetricName: Value Unit (Ref: Min - Max). "
+                                    "Preserve the test date."
+                                ),
+                            },
+                            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64_data}"}},
+                        ],
+                    }
+                ],
+            },
+            timeout=40.0,
+        )
+        if resp.status_code == 200:
+            return (resp.json()["choices"][0]["message"]["content"] or "").strip()
+    except Exception as e:
+        print(f"[OpenAI OCR error]: {e}")
+    return ""
+
+
+def _ocr_with_ocrspace(filepath: str, filename: str) -> str:
+    """Zero-config free cloud OCR fallback (works on Linux/Vercel without API keys)."""
+    try:
+        file_size = os.path.getsize(filepath)
+        if file_size > 1_000_000:
+            return ""
+        api_key = os.environ.get("OCR_SPACE_API_KEY", "helloworld")
+        with open(filepath, "rb") as f:
+            resp = httpx.post(
+                "https://api.ocr.space/parse/image",
+                headers={"apikey": api_key},
+                data={"OCREngine": "2", "isTable": "true", "scale": "true"},
+                files={"file": (filename, f, _guess_mime_type(filename))},
+                timeout=25.0,
+            )
+        if resp.status_code == 200:
+            data = resp.json()
+            parsed = data.get("ParsedResults") or []
+            chunks = [p.get("ParsedText", "").strip() for p in parsed if p.get("ParsedText")]
+            return "\n\n".join(chunks).strip()
+    except Exception as e:
+        print(f"[OCR.space error]: {e}")
+    return ""
+
+
+def extract_text_from_image(filepath: str, filename: str = "", api_keys: Optional[Dict[str, str]] = None) -> str:
+    """Uses macOS Apple Vision locally, and falls back to Gemini/OpenAI/OCR.space on Linux/Vercel/Windows."""
+    # 1. Try native macOS Apple Vision if available
     try:
         import Vision
         from Cocoa import NSURL, NSDictionary
@@ -186,30 +311,68 @@ def extract_text_from_image(filepath: str) -> str:
                     text.append(candidates[0].string())
         if text:
             return "\n".join(text)
-    except Exception as e:
-        print(f"OCR error: {e}")
-    return ""
+    except Exception:
+        pass
 
-def extract_text_from_pdf(filepath: str) -> str:
-    """Extracts text content from a PDF file."""
+    # 2. Cloud Vision OCR (works on Vercel/Linux/Windows)
+    keys = api_keys or {}
+    mime_type = _guess_mime_type(filename or filepath)
+    gemini_key = keys.get("gemini") or os.getenv("GEMINI_API_KEY", "")
+    if gemini_key:
+        txt = _ocr_with_gemini(filepath, mime_type, gemini_key)
+        if txt:
+            return txt
+
+    openai_key = keys.get("openai") or os.getenv("OPENAI_API_KEY", "")
+    if openai_key:
+        txt = _ocr_with_openai(filepath, mime_type, openai_key)
+        if txt:
+            return txt
+
+    return _ocr_with_ocrspace(filepath, filename or os.path.basename(filepath))
+
+
+def extract_text_from_pdf(filepath: str, filename: str = "", api_keys: Optional[Dict[str, str]] = None) -> str:
+    """Extracts text from a PDF (layout-preserving first), with automatic Vision OCR fallback for scanned PDFs."""
     text_chunks = []
     try:
         reader = PdfReader(filepath)
         for page_idx, page in enumerate(reader.pages):
-            page_text = page.extract_text()
-            if page_text:
+            page_text = ""
+            try:
+                page_text = page.extract_text(extraction_mode="layout") or ""
+            except Exception:
+                page_text = ""
+            if not page_text.strip():
+                page_text = page.extract_text() or ""
+            if page_text and page_text.strip():
                 text_chunks.append(f"--- Страница {page_idx + 1} ---\n{page_text.strip()}")
     except Exception as e:
-        return f"Ошибка чтения PDF: {str(e)}"
-    return "\n\n".join(text_chunks)
+        print(f"PDF text extract error: {e}")
 
-def extract_text_from_file(filepath: str, filename: str) -> str:
-    """Extracts text depending on extension, using Vision OCR for images."""
+    combined = "\n\n".join(text_chunks).strip()
+    # If PDF is a scan (image-only PDF with little or no selectable text), run Cloud OCR
+    if len(combined) < 40:
+        keys = api_keys or {}
+        gemini_key = keys.get("gemini") or os.getenv("GEMINI_API_KEY", "")
+        if gemini_key:
+            ocr_txt = _ocr_with_gemini(filepath, "application/pdf", gemini_key)
+            if ocr_txt:
+                return f"--- Распознанный скан PDF ({filename or os.path.basename(filepath)}) ---\n{ocr_txt}"
+        ocr_txt = _ocr_with_ocrspace(filepath, filename or os.path.basename(filepath))
+        if ocr_txt:
+            return f"--- Распознанный скан PDF ({filename or os.path.basename(filepath)}) ---\n{ocr_txt}"
+
+    return combined
+
+
+def extract_text_from_file(filepath: str, filename: str, api_keys: Optional[Dict[str, str]] = None) -> str:
+    """Extracts text depending on extension, using layout PDF extraction and Vision OCR for images/scans."""
     ext = filename.lower().split(".")[-1]
     if ext == "pdf":
-        return extract_text_from_pdf(filepath)
+        return extract_text_from_pdf(filepath, filename=filename, api_keys=api_keys)
     elif ext in ["png", "jpg", "jpeg", "webp", "tiff", "bmp"]:
-        ocr_text = extract_text_from_image(filepath)
+        ocr_text = extract_text_from_image(filepath, filename=filename, api_keys=api_keys)
         if ocr_text:
             return f"--- Распознанный текст исследования ({filename}) ---\n{ocr_text}"
         return f"Медицинское изображение: {filename}"
@@ -681,5 +844,138 @@ def parse_lab_metrics(
                 })
             except Exception:
                 pass
+
+    return results
+
+
+def extract_lab_metrics_with_llm(
+    text: str,
+    default_date: str = "2026-01-01",
+    filename: str = "",
+    api_keys: Optional[Dict[str, str]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    AI fallback parser for complex columnar/international lab reports where regex yields 0 metrics.
+    Uses Gemini or OpenAI to extract structured JSON mapped to CANONICAL_TARGETS.
+    """
+    if not text or len(text.strip()) < 40:
+        return []
+    keys = api_keys or {}
+    gemini_key = keys.get("gemini") or os.getenv("GEMINI_API_KEY", "")
+    openai_key = keys.get("openai") or os.getenv("OPENAI_API_KEY", "")
+    if not gemini_key and not openai_key:
+        return []
+
+    # Build compact canonical schema for prompt
+    schema_lines = [f"- {k}: {v[1]} (unit: {v[2]})" for k, v in CANONICAL_TARGETS.items()]
+    schema_str = "\n".join(schema_lines)
+
+    # Try to infer date from filename first (e.g. 2026-02-12_...)
+    date_match = re.search(r"(20\d{2}[-./]\d{2}[-./]\d{2})", filename or "")
+    hint_date = date_match.group(1).replace(".", "-").replace("/", "-") if date_match else default_date
+
+    prompt = (
+        "Extract numeric laboratory biomarkers from the medical report text below.\n"
+        f"Filename: {filename}\nFallback date: {hint_date}\n\n"
+        "Map each found biomarker ONLY to one of these canonical keys and CONVERT its value to the target unit "
+        "(e.g. Hemoglobin g/dL * 10 -> г/л; Total Protein or Albumin g/dL * 10 -> г/л; Bilirubin mg/dL * 17.1 -> мкмоль/л; "
+        "Creatinine mg/dL * 88.4 -> мкмоль/л; Glucose mg/dL / 18 -> ммоль/л; Cholesterol mg/dL / 38.67 -> ммоль/л):\n"
+        f"{schema_str}\n\n"
+        "Return ONLY a valid JSON array of objects, no markdown, no commentary:\n"
+        '[{"key": "ferritin", "value": 5.3, "record_date": "YYYY-MM-DD"}]\n'
+        "If no numeric biomarkers from the list are present, return [].\n\n"
+        f"REPORT TEXT:\n{text[:6000]}"
+    )
+
+    raw_json = ""
+    try:
+        if gemini_key:
+            for model in ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"):
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+                resp = httpx.post(
+                    url,
+                    json={
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {"temperature": 0.0, "responseMimeType": "application/json"},
+                    },
+                    timeout=25.0,
+                )
+                if resp.status_code == 200:
+                    cands = resp.json().get("candidates") or []
+                    if cands:
+                        parts = cands[0].get("content", {}).get("parts") or []
+                        raw_json = "".join(p.get("text", "") for p in parts).strip()
+                        if raw_json:
+                            break
+                elif resp.status_code in (400, 401, 403):
+                    break
+        elif openai_key:
+            resp = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "temperature": 0,
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+                timeout=25.0,
+            )
+            if resp.status_code == 200:
+                raw_json = (resp.json()["choices"][0]["message"]["content"] or "").strip()
+    except Exception as e:
+        print(f"[LLM Lab Extract Error]: {e}")
+        return []
+
+    if not raw_json:
+        return []
+
+    # Strip markdown fences if present
+    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_json.strip(), flags=re.IGNORECASE | re.DOTALL)
+    try:
+        items = json.loads(cleaned)
+        if not isinstance(items, list):
+            return []
+    except Exception:
+        return []
+
+    results = []
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        k = str(item.get("key") or "").strip().lower()
+        if k not in CANONICAL_TARGETS:
+            continue
+        try:
+            val = float(item.get("value"))
+        except (TypeError, ValueError):
+            continue
+        rec_date = str(item.get("record_date") or hint_date).strip()
+        if not re.match(r"^20\d{2}-\d{2}-\d{2}$", rec_date):
+            rec_date = hint_date
+
+        panel, name, unit, ref_min, ref_max = CANONICAL_TARGETS[k]
+        dedup_key = (name, rec_date)
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
+
+        status = "normal"
+        if ref_min is not None and val < ref_min:
+            status = "low"
+        elif ref_max is not None and val > ref_max:
+            status = "high"
+
+        results.append({
+            "metric_name": name,
+            "panel": panel,
+            "value": round(val, 2),
+            "unit": unit,
+            "reference_min": ref_min,
+            "reference_max": ref_max,
+            "status": status,
+            "record_date": rec_date,
+            "notes": f"[{panel}] Извлечено AI-парсером из {filename}" if filename else f"[{panel}] Извлечено AI-парсером",
+        })
 
     return results

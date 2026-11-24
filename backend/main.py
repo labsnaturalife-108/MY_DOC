@@ -24,7 +24,7 @@ from .auth import (
     normalize_email,
     validate_email,
 )
-from .parser import extract_text_from_file, parse_lab_metrics
+from .parser import extract_text_from_file, parse_lab_metrics, extract_lab_metrics_with_llm
 from .rag_engine import rag_engine
 from .llm_hub import llm_hub
 from .prevent_calculator import extract_prevent_inputs, calculate_prevent_risk
@@ -628,8 +628,15 @@ async def upload_document(
     file_size = os.path.getsize(file_path)
     file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "unknown"
 
-    # Extract text
-    text_content = extract_text_from_file(file_path, file.filename)
+    # Fetch user API keys for Cloud Vision OCR & AI lab extraction fallback
+    user_settings = get_all_settings_dict(db, current_user.id)
+    ocr_api_keys = {
+        "gemini": user_settings.get("api_key_gemini") or os.getenv("GEMINI_API_KEY", ""),
+        "openai": user_settings.get("api_key_openai") or os.getenv("OPENAI_API_KEY", ""),
+    }
+
+    # Extract text (with layout PDF + Cloud Vision OCR for scans/images)
+    text_content = extract_text_from_file(file_path, file.filename, api_keys=ocr_api_keys)
 
     # Detect folder type
     folder_type = "general"
@@ -676,6 +683,13 @@ async def upload_document(
         patient_gender=p_gender,
         filename=file.filename
     )
+    if not extracted_metrics and text_content and len(text_content.strip()) > 60:
+        extracted_metrics = extract_lab_metrics_with_llm(
+            text_content,
+            default_date=today_str,
+            filename=file.filename,
+            api_keys=ocr_api_keys,
+        )
     added_metrics_count = 0
     for m in extracted_metrics:
         lab_m = models.LabMetric(
@@ -845,6 +859,11 @@ def reparse_patient_labs(
     db.query(models.LabMetric).filter(models.LabMetric.patient_id == patient_id).delete()
 
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    user_settings = get_all_settings_dict(db, current_user.id)
+    ocr_api_keys = {
+        "gemini": user_settings.get("api_key_gemini") or os.getenv("GEMINI_API_KEY", ""),
+        "openai": user_settings.get("api_key_openai") or os.getenv("OPENAI_API_KEY", ""),
+    }
     total_added = 0
     seen = set()
 
@@ -859,6 +878,13 @@ def reparse_patient_labs(
             patient_gender=patient.gender or "male",
             filename=doc.filename
         )
+        if not metrics and len(doc.extracted_text.strip()) > 60:
+            metrics = extract_lab_metrics_with_llm(
+                doc.extracted_text,
+                default_date=doc_date,
+                filename=doc.filename,
+                api_keys=ocr_api_keys,
+            )
         for m in metrics:
             key = (m["metric_name"], m["record_date"], round(m["value"], 3))
             if key in seen:
