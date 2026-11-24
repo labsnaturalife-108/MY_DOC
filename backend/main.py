@@ -9,18 +9,31 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from .database import engine, Base, get_db
+from .database import engine, Base, get_db, run_auth_migrations
 from . import models, schemas
+from .auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user,
+    get_current_user_or_query,
+    normalize_email,
+    validate_email,
+)
 from .parser import extract_text_from_file, parse_lab_metrics
 from .rag_engine import rag_engine
 from .llm_hub import llm_hub
 from .prevent_calculator import extract_prevent_inputs, calculate_prevent_risk
 from .pubmed_service import pubmed_service
 
-# Create database tables
+# Create database tables & run safe auth migrations for existing databases
 Base.metadata.create_all(bind=engine)
+run_auth_migrations()
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "data", "uploads")
+if os.environ.get("VERCEL"):
+    UPLOAD_DIR = "/tmp/mydoc_uploads"
+else:
+    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "data", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = FastAPI(
@@ -50,18 +63,116 @@ def create_default_folders(db: Session, patient_id: int):
         db.add(folder)
     db.commit()
 
+# --- Ownership Helpers ---
+def get_owned_patient(db: Session, patient_id: int, user_id: int) -> models.Patient:
+    patient = db.query(models.Patient).filter(
+        models.Patient.id == patient_id,
+        models.Patient.user_id == user_id
+    ).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Пациент не найден")
+    return patient
+
+def get_owned_session(db: Session, session_id: int, user_id: int) -> models.ChatSession:
+    session = (
+        db.query(models.ChatSession)
+        .join(models.Patient, models.ChatSession.patient_id == models.Patient.id)
+        .filter(
+            models.ChatSession.id == session_id,
+            models.Patient.user_id == user_id
+        )
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+    return session
+
 # --- Health Check ---
 @app.get("/api/health")
 def health():
     return {"status": "ok", "app": "MY_DOC", "timestamp": datetime.utcnow().isoformat()}
 
+# --- Auth Endpoints ---
+@app.post("/api/auth/register", response_model=schemas.AuthTokenResponse)
+def register_user(data: schemas.UserRegister, db: Session = Depends(get_db)):
+    email = normalize_email(data.email)
+    if not validate_email(email):
+        raise HTTPException(status_code=400, detail="Некорректный формат email")
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Пароль должен содержать минимум 6 символов")
+
+    existing = db.query(models.User).filter(models.User.email == email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Пользователь с таким email уже зарегистрирован")
+
+    is_first_user = db.query(models.User).count() == 0
+
+    user = models.User(
+        email=email,
+        password_hash=hash_password(data.password),
+        full_name=(data.full_name or "").strip() or None,
+        is_active=True
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    # First registered user claims any legacy unassigned patients & settings from pre-auth DB
+    if is_first_user:
+        db.query(models.Patient).filter(models.Patient.user_id.is_(None)).update(
+            {models.Patient.user_id: user.id}, synchronize_session=False
+        )
+        db.query(models.AppSetting).filter(models.AppSetting.user_id.is_(None)).update(
+            {models.AppSetting.user_id: user.id}, synchronize_session=False
+        )
+        db.commit()
+
+    token = create_access_token(user.id, user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@app.post("/api/auth/login", response_model=schemas.AuthTokenResponse)
+def login_user(data: schemas.UserLogin, db: Session = Depends(get_db)):
+    email = normalize_email(data.email)
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user or not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Аккаунт деактивирован")
+
+    token = create_access_token(user.id, user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@app.get("/api/auth/me", response_model=schemas.UserResponse)
+def get_me(current_user: models.User = Depends(get_current_user)):
+    return current_user
+
 # --- Patient Endpoints ---
 @app.get("/api/patients", response_model=List[schemas.PatientResponse])
-def list_patients(db: Session = Depends(get_db)):
-    return db.query(models.Patient).order_by(models.Patient.updated_at.desc()).all()
+def list_patients(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    return (
+        db.query(models.Patient)
+        .filter(models.Patient.user_id == current_user.id)
+        .order_by(models.Patient.updated_at.desc())
+        .all()
+    )
 
 @app.post("/api/patients", response_model=schemas.PatientResponse)
-def create_patient(data: schemas.PatientCreate, db: Session = Depends(get_db)):
+def create_patient(
+    data: schemas.PatientCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     # Calculate BMI if height and weight are provided
     bmi = None
     if data.height and data.weight and data.height > 0:
@@ -69,6 +180,7 @@ def create_patient(data: schemas.PatientCreate, db: Session = Depends(get_db)):
         bmi = round(data.weight / (h_m * h_m), 1)
 
     patient = models.Patient(
+        user_id=current_user.id,
         full_name=data.full_name,
         birth_date=data.birth_date,
         age=data.age,
@@ -91,17 +203,21 @@ def create_patient(data: schemas.PatientCreate, db: Session = Depends(get_db)):
     return patient
 
 @app.get("/api/patients/{patient_id}", response_model=schemas.PatientResponse)
-def get_patient(patient_id: int, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
-    return patient
+def get_patient(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    return get_owned_patient(db, patient_id, current_user.id)
 
 @app.put("/api/patients/{patient_id}", response_model=schemas.PatientResponse)
-def update_patient(patient_id: int, data: schemas.PatientUpdate, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+def update_patient(
+    patient_id: int,
+    data: schemas.PatientUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    patient = get_owned_patient(db, patient_id, current_user.id)
 
     update_dict = data.dict(exclude_unset=True)
     for key, val in update_dict.items():
@@ -118,10 +234,12 @@ def update_patient(patient_id: int, data: schemas.PatientUpdate, db: Session = D
     return patient
 
 @app.delete("/api/patients/{patient_id}")
-def delete_patient(patient_id: int, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+def delete_patient(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    patient = get_owned_patient(db, patient_id, current_user.id)
     
     # 1. Delete vectors from ChromaDB
     rag_engine.delete_patient_collection(patient_id)
@@ -141,7 +259,12 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db)):
 
 # --- Folders & Documents ---
 @app.get("/api/patients/{patient_id}/folders", response_model=List[schemas.FolderResponse])
-def get_folders(patient_id: int, db: Session = Depends(get_db)):
+def get_folders(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     folders = db.query(models.Folder).filter(models.Folder.patient_id == patient_id).all()
     res = []
     for f in folders:
@@ -152,7 +275,13 @@ def get_folders(patient_id: int, db: Session = Depends(get_db)):
     return res
 
 @app.post("/api/patients/{patient_id}/folders", response_model=schemas.FolderResponse)
-def create_folder(patient_id: int, data: schemas.FolderCreate, db: Session = Depends(get_db)):
+def create_folder(
+    patient_id: int,
+    data: schemas.FolderCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     folder = models.Folder(patient_id=patient_id, name=data.name, folder_type=data.folder_type)
     db.add(folder)
     db.commit()
@@ -160,7 +289,13 @@ def create_folder(patient_id: int, data: schemas.FolderCreate, db: Session = Dep
     return folder
 
 @app.get("/api/patients/{patient_id}/documents", response_model=List[schemas.DocumentResponse])
-def get_documents(patient_id: int, folder_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_documents(
+    patient_id: int,
+    folder_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     query = db.query(models.Document).filter(models.Document.patient_id == patient_id)
     if folder_id is not None:
         query = query.filter(models.Document.folder_id == folder_id)
@@ -171,11 +306,10 @@ async def upload_document(
     patient_id: int,
     file: UploadFile = File(...),
     folder_id: Optional[int] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+    patient = get_owned_patient(db, patient_id, current_user.id)
 
     # Safe file storage
     patient_dir = os.path.join(UPLOAD_DIR, f"patient_{patient_id}")
@@ -268,7 +402,13 @@ async def upload_document(
     }
 
 @app.delete("/api/patients/{patient_id}/documents/{doc_id}")
-def delete_document(patient_id: int, doc_id: int, db: Session = Depends(get_db)):
+def delete_document(
+    patient_id: int,
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     doc = db.query(models.Document).filter(
         models.Document.id == doc_id,
         models.Document.patient_id == patient_id
@@ -291,7 +431,13 @@ def delete_document(patient_id: int, doc_id: int, db: Session = Depends(get_db))
     return {"success": True, "message": "Документ удален"}
 
 @app.get("/api/patients/{patient_id}/documents/{doc_id}")
-def get_document_details(patient_id: int, doc_id: int, db: Session = Depends(get_db)):
+def get_document_details(
+    patient_id: int,
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     doc = db.query(models.Document).filter(
         models.Document.id == doc_id,
         models.Document.patient_id == patient_id
@@ -331,7 +477,13 @@ def get_document_details(patient_id: int, doc_id: int, db: Session = Depends(get
     }
 
 @app.get("/api/patients/{patient_id}/documents/{doc_id}/file")
-def get_document_file(patient_id: int, doc_id: int, db: Session = Depends(get_db)):
+def get_document_file(
+    patient_id: int,
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user_or_query)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     doc = db.query(models.Document).filter(
         models.Document.id == doc_id,
         models.Document.patient_id == patient_id
@@ -361,17 +513,25 @@ def get_document_file(patient_id: int, doc_id: int, db: Session = Depends(get_db
 
 # --- Lab Metrics / Dynamic Charts ---
 @app.get("/api/patients/{patient_id}/labs", response_model=List[schemas.LabMetricResponse])
-def get_lab_metrics(patient_id: int, metric_name: Optional[str] = None, db: Session = Depends(get_db)):
+def get_lab_metrics(
+    patient_id: int,
+    metric_name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     query = db.query(models.LabMetric).filter(models.LabMetric.patient_id == patient_id)
     if metric_name:
         query = query.filter(models.LabMetric.metric_name == metric_name)
     return query.order_by(models.LabMetric.record_date.asc()).all()
 
 @app.post("/api/patients/{patient_id}/reparse_labs")
-def reparse_patient_labs(patient_id: int, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+def reparse_patient_labs(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    patient = get_owned_patient(db, patient_id, current_user.id)
     
     docs = db.query(models.Document).filter(
         models.Document.patient_id == patient_id,
@@ -420,7 +580,13 @@ def reparse_patient_labs(patient_id: int, db: Session = Depends(get_db)):
     return {"success": True, "total_metrics": total_added}
 
 @app.post("/api/patients/{patient_id}/labs", response_model=schemas.LabMetricResponse)
-def add_lab_metric(patient_id: int, data: schemas.LabMetricCreate, db: Session = Depends(get_db)):
+def add_lab_metric(
+    patient_id: int,
+    data: schemas.LabMetricCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     status = "normal"
     if data.reference_min is not None and data.value < data.reference_min:
         status = "low"
@@ -444,7 +610,13 @@ def add_lab_metric(patient_id: int, data: schemas.LabMetricCreate, db: Session =
     return metric
 
 @app.delete("/api/patients/{patient_id}/labs/{metric_id}")
-def delete_lab_metric(patient_id: int, metric_id: int, db: Session = Depends(get_db)):
+def delete_lab_metric(
+    patient_id: int,
+    metric_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     metric = db.query(models.LabMetric).filter(
         models.LabMetric.id == metric_id,
         models.LabMetric.patient_id == patient_id
@@ -457,10 +629,12 @@ def delete_lab_metric(patient_id: int, metric_id: int, db: Session = Depends(get
 
 # --- PREVENT 10-Year CVD Risk Calculator ---
 @app.get("/api/patients/{patient_id}/prevent-params")
-def get_patient_prevent_params(patient_id: int, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+def get_patient_prevent_params(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    patient = get_owned_patient(db, patient_id, current_user.id)
     
     docs = db.query(models.Document).filter(
         models.Document.patient_id == patient_id,
@@ -479,10 +653,13 @@ def get_patient_prevent_params(patient_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Ошибка расчета PREVENT: {str(e)}")
 
 @app.post("/api/patients/{patient_id}/prevent-calculate")
-def calculate_patient_prevent_risk(patient_id: int, payload: schemas.PreventCalculateRequest, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+def calculate_patient_prevent_risk(
+    patient_id: int,
+    payload: schemas.PreventCalculateRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     
     try:
         risk = calculate_prevent_risk(payload.dict())
@@ -492,13 +669,24 @@ def calculate_patient_prevent_risk(patient_id: int, payload: schemas.PreventCalc
 
 # --- Chat Sessions & Messages ---
 @app.get("/api/patients/{patient_id}/chat/sessions", response_model=List[schemas.ChatSessionResponse])
-def get_chat_sessions(patient_id: int, db: Session = Depends(get_db)):
+def get_chat_sessions(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     return db.query(models.ChatSession).filter(
         models.ChatSession.patient_id == patient_id
     ).order_by(models.ChatSession.updated_at.desc()).all()
 
 @app.post("/api/patients/{patient_id}/chat/sessions", response_model=schemas.ChatSessionResponse)
-def create_chat_session(patient_id: int, data: schemas.ChatSessionCreate, db: Session = Depends(get_db)):
+def create_chat_session(
+    patient_id: int,
+    data: schemas.ChatSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
     session = models.ChatSession(
         patient_id=patient_id,
         title=data.title or "Новый диалог",
@@ -511,25 +699,35 @@ def create_chat_session(patient_id: int, data: schemas.ChatSessionCreate, db: Se
     return session
 
 @app.get("/api/chat/sessions/{session_id}/messages", response_model=List[schemas.ChatMessageResponse])
-def get_chat_messages(session_id: int, db: Session = Depends(get_db)):
+def get_chat_messages(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_session(db, session_id, current_user.id)
     return db.query(models.ChatMessage).filter(
         models.ChatMessage.session_id == session_id
     ).order_by(models.ChatMessage.created_at.asc()).all()
 
 @app.delete("/api/chat/sessions/{session_id}")
-def delete_chat_session(session_id: int, db: Session = Depends(get_db)):
-    session = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Сессия не найдена")
+def delete_chat_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    session = get_owned_session(db, session_id, current_user.id)
     db.delete(session)
     db.commit()
     return {"success": True}
 
 @app.put("/api/chat/sessions/{session_id}", response_model=schemas.ChatSessionResponse)
-def update_chat_session(session_id: int, data: schemas.ChatSessionCreate, db: Session = Depends(get_db)):
-    session = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Сессия не найдена")
+def update_chat_session(
+    session_id: int,
+    data: schemas.ChatSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    session = get_owned_session(db, session_id, current_user.id)
     if data.model_id:
         session.model_id = data.model_id
     if data.provider:
@@ -540,24 +738,20 @@ def update_chat_session(session_id: int, data: schemas.ChatSessionCreate, db: Se
     db.refresh(session)
     return session
 
-# Helper to fetch settings
-def get_all_settings_dict(db: Session):
-    rows = db.query(models.AppSetting).all()
+# Helper to fetch settings scoped to user
+def get_all_settings_dict(db: Session, user_id: int):
+    rows = db.query(models.AppSetting).filter(models.AppSetting.user_id == user_id).all()
     return {r.key: r.value for r in rows if r.value}
 
 @app.post("/api/chat/sessions/{session_id}/stream")
 async def stream_chat_message(
     session_id: int,
     payload: schemas.ChatMessageCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    session = db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Сессия не найдена")
-
-    patient = db.query(models.Patient).filter(models.Patient.id == session.patient_id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Пациент не найден")
+    session = get_owned_session(db, session_id, current_user.id)
+    patient = get_owned_patient(db, session.patient_id, current_user.id)
 
     # Update session model if requested
     if payload.model_id:
@@ -626,7 +820,7 @@ async def stream_chat_message(
         print(f"[PREVENT Error in Chat Stream] {e}")
         patient_profile["prevent_risk"] = None
 
-    settings = get_all_settings_dict(db)
+    settings = get_all_settings_dict(db, current_user.id)
     api_keys = {
         "openai": settings.get("api_key_openai") or os.getenv("OPENAI_API_KEY", ""),
         "anthropic": settings.get("api_key_anthropic") or os.getenv("ANTHROPIC_API_KEY", ""),
@@ -728,8 +922,11 @@ async def stream_chat_message(
 
 # --- Models & Settings ---
 @app.get("/api/models")
-async def get_models(db: Session = Depends(get_db)):
-    settings = get_all_settings_dict(db)
+async def get_models(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    settings = get_all_settings_dict(db, current_user.id)
     lm_url = settings.get("url_lmstudio") or "http://localhost:1234/v1"
     ol_url = settings.get("url_ollama") or "http://localhost:11434/v1"
     return await llm_hub.get_models_list(lm_url, ol_url)
@@ -737,7 +934,8 @@ async def get_models(db: Session = Depends(get_db)):
 @app.get("/api/settings/check-local")
 async def check_local_servers(
     lmstudio_url: str = "http://localhost:1234/v1",
-    ollama_url: str = "http://localhost:11434/v1"
+    ollama_url: str = "http://localhost:11434/v1",
+    current_user: models.User = Depends(get_current_user)
 ):
     lm_status = await llm_hub.check_local_status(lmstudio_url)
     ollama_status = await llm_hub.check_local_status(ollama_url)
@@ -747,8 +945,11 @@ async def check_local_servers(
     }
 
 @app.get("/api/settings")
-def get_settings(db: Session = Depends(get_db)):
-    settings = db.query(models.AppSetting).all()
+def get_settings(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    settings = db.query(models.AppSetting).filter(models.AppSetting.user_id == current_user.id).all()
     # Mask secret keys for safety
     res = {}
     for s in settings:
@@ -759,10 +960,17 @@ def get_settings(db: Session = Depends(get_db)):
     return res
 
 @app.post("/api/settings")
-def update_settings(data: schemas.SettingUpdate, db: Session = Depends(get_db)):
-    setting = db.query(models.AppSetting).filter(models.AppSetting.key == data.key).first()
+def update_settings(
+    data: schemas.SettingUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    setting = db.query(models.AppSetting).filter(
+        models.AppSetting.user_id == current_user.id,
+        models.AppSetting.key == data.key
+    ).first()
     if not setting:
-        setting = models.AppSetting(key=data.key, value=data.value)
+        setting = models.AppSetting(user_id=current_user.id, key=data.key, value=data.value)
         db.add(setting)
     else:
         setting.value = data.value

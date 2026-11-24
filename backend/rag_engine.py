@@ -1,20 +1,37 @@
 import os
-import chromadb
 from typing import List, Dict, Any, Optional
 
+_DISABLE_CHROMA = bool(os.environ.get("VERCEL") or os.environ.get("DISABLE_CHROMA") == "1")
+if not _DISABLE_CHROMA:
+    try:
+        import chromadb
+        CHROMA_AVAILABLE = True
+    except Exception:
+        chromadb = None
+        CHROMA_AVAILABLE = False
+else:
+    chromadb = None
+    CHROMA_AVAILABLE = False
+
 CHROMA_DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "chroma")
-os.makedirs(CHROMA_DATA_DIR, exist_ok=True)
 
 class RAGEngine:
     def __init__(self):
-        self.client = chromadb.PersistentClient(path=CHROMA_DATA_DIR)
+        self.client = None
+        if CHROMA_AVAILABLE and chromadb is not None:
+            try:
+                os.makedirs(CHROMA_DATA_DIR, exist_ok=True)
+                self.client = chromadb.PersistentClient(path=CHROMA_DATA_DIR)
+            except Exception as e:
+                print(f"[RAG] Warning: Chroma init skipped ({e}), using direct DB context retrieval")
+                self.client = None
 
     def _get_collection_name(self, patient_id: int) -> str:
         return f"patient_{patient_id}"
 
     def index_document(self, patient_id: int, document_id: int, filename: str, folder_type: str, text: str):
         """Splits document text into overlapping chunks and stores in ChromaDB."""
-        if not text or len(text.strip()) == 0:
+        if not self.client or not text or len(text.strip()) == 0:
             return
 
         collection_name = self._get_collection_name(patient_id)
@@ -62,6 +79,8 @@ class RAGEngine:
 
     def search_context(self, patient_id: int, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         """Retrieves relevant chunks for a patient query."""
+        if not self.client:
+            return []
         collection_name = self._get_collection_name(patient_id)
         try:
             collection = self.client.get_collection(name=collection_name)
@@ -233,6 +252,8 @@ class RAGEngine:
 
     def delete_document(self, patient_id: int, document_id: int):
         """Removes all indexed chunks of a document."""
+        if not self.client:
+            return
         collection_name = self._get_collection_name(patient_id)
         try:
             collection = self.client.get_collection(name=collection_name)
@@ -242,6 +263,8 @@ class RAGEngine:
 
     def delete_patient_collection(self, patient_id: int):
         """Deletes the entire ChromaDB collection for a patient."""
+        if not self.client:
+            return
         collection_name = self._get_collection_name(patient_id)
         try:
             self.client.delete_collection(name=collection_name)

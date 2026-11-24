@@ -2,6 +2,30 @@ from datetime import datetime
 from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 
+# --- Auth Schemas ---
+class UserRegister(BaseModel):
+    email: str
+    password: str = Field(..., min_length=6, max_length=128)
+    full_name: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    full_name: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
 # --- Patient Schemas ---
 class PatientBase(BaseModel):
     full_name: str

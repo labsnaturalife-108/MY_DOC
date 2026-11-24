@@ -18,9 +18,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Utensils,
-  Activity
+  Activity,
+  LogOut
 } from "lucide-react";
-import { Patient, ChatSession } from "@/lib/api";
+import { Patient, ChatSession, AuthUser } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -39,6 +40,8 @@ interface SidebarProps {
   onSelectTab: (tab: string) => void;
   isLocalOnline: boolean;
   onDeletePatient?: (p: Patient) => void;
+  user?: AuthUser | null;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -55,7 +58,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
   isLocalOnline,
-  onDeletePatient
+  onDeletePatient,
+  user,
+  onLogout
 }) => {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { language, t } = useLanguage();
@@ -295,6 +300,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <Settings className="w-4 h-4" />
             </button>
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title={`${language === "ru" ? "Выйти" : "Sign out"} (${user?.email || ""})`}
+                className="p-2 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -563,6 +578,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))
             )}
           </div>
+
+          {/* Account & Server Status Footer */}
+          {user && (
+            <div className="px-3 py-2.5 border-t border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/80 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-zinc-900/10 dark:bg-white/10 border border-zinc-900/15 dark:border-white/15 flex items-center justify-center text-xs font-bold text-zinc-800 dark:text-zinc-200 shrink-0">
+                  {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  {user.full_name && (
+                    <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate leading-tight">
+                      {user.full_name}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate leading-tight">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  title={language === "ru" ? "Выйти из аккаунта" : "Sign out"}
+                  className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 flex items-center gap-1 text-xs font-medium"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Footer / Server Status */}
           <div className="p-3 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-950/60 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">

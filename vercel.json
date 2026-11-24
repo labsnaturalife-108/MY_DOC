@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd frontend && NEXT_PUBLIC_API_URL=/api npm install && NEXT_PUBLIC_API_URL=/api npm run build",
+  "outputDirectory": "frontend/out",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60
+    }
+  }
+}

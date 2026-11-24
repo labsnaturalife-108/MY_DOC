@@ -10,12 +10,15 @@ import { PreventCalculatorView } from "@/components/PreventCalculatorView";
 import { NutritionView } from "@/components/NutritionView";
 import { LifestyleView } from "@/components/LifestyleView";
 import { SettingsModal } from "@/components/SettingsModal";
+import { AuthView } from "@/components/AuthView";
 import { Patient, ChatSession, api } from "@/lib/api";
 import { User, UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
   const { language, setLanguage, t } = useLanguage();
+  const { user, isLoading: isAuthLoading, logout } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -97,11 +100,41 @@ export default function Home() {
   };
 
   useEffect(() => {
-    loadData();
+    if (!user) {
+      setPatients([]);
+      setActivePatient(null);
+      setChatSessions([]);
+      setActiveSessionId(null);
+      setIsSettingsOpen(false);
+      setLoading(false);
+      return;
+    }
+
+    // Load fresh data for the authenticated user
+    setActivePatient(null);
+    setChatSessions([]);
+    setActiveSessionId(null);
+    const loadForUser = async () => {
+      try {
+        setLoading(true);
+        const patList = await api.getPatients();
+        setPatients(patList);
+        if (patList.length > 0) {
+          setActivePatient(patList[0]);
+          await loadSessionsForPatient(patList[0].id);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadForUser();
     checkLocalStatus();
     const interval = setInterval(checkLocalStatus, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.id]);
 
   const handleSelectPatient = async (p: Patient) => {
     setActivePatient(p);
@@ -210,6 +243,18 @@ export default function Home() {
 
   const activeSession = chatSessions.find((s) => s.id === activeSessionId) || null;
 
+  if (isAuthLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthView />;
+  }
+
   return (
     <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden transition-colors duration-150">
       {/* Left Sidebar */}
@@ -228,6 +273,8 @@ export default function Home() {
         onSelectTab={setActiveTab}
         isLocalOnline={isLocalOnline}
         onDeletePatient={(p) => setPatientToDelete(p)}
+        user={user}
+        onLogout={logout}
       />
 
       {/* Main Content Area */}

@@ -21,7 +21,7 @@ import {
   Check,
   Printer
 } from "lucide-react";
-import { Patient, ChatSession, ChatMessage, AIModel, api } from "@/lib/api";
+import { Patient, ChatSession, ChatMessage, AIModel, api, API_BASE, authFetch } from "@/lib/api";
 import { MedicalMarkdown } from "./MedicalMarkdown";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -190,7 +190,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setMessages((prev) => [...prev, tempUserMsg]);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/chat/sessions/${session.id}/stream`, {
+      const response = await authFetch(`${API_BASE}/chat/sessions/${session.id}/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

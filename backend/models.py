@@ -1,13 +1,30 @@
 import json
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from .database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    full_name = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    patients = relationship("Patient", back_populates="owner", cascade="all, delete-orphan")
+    settings = relationship("AppSetting", back_populates="owner", cascade="all, delete-orphan")
+
 
 class Patient(Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     full_name = Column(String(255), nullable=False, index=True)
     birth_date = Column(String(50), nullable=True)
     age = Column(Integer, nullable=True)
@@ -23,6 +40,7 @@ class Patient(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    owner = relationship("User", back_populates="patients")
     folders = relationship("Folder", back_populates="patient", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="patient", cascade="all, delete-orphan")
     lab_metrics = relationship("LabMetric", back_populates="patient", cascade="all, delete-orphan")
@@ -111,9 +129,15 @@ class ChatMessage(Base):
 
 class AppSetting(Base):
     __tablename__ = "app_settings"
+    __table_args__ = (
+        UniqueConstraint("user_id", "key", name="uq_user_setting_key"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
-    key = Column(String(100), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    key = Column(String(100), nullable=False, index=True)
     value = Column(Text, nullable=True)
     description = Column(String(255), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User", back_populates="settings")

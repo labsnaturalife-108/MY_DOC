@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "MY_DOC — Личный медицинский AI-ассистент / Medical AI Assistant",
@@ -39,7 +40,9 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col font-sans bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-150">
         <ThemeProvider>
           <LanguageProvider>
-            {children}
+            <AuthProvider>
+              {children}
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

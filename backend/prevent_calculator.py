@@ -1,7 +1,10 @@
 import re
 import math
 from typing import Dict, Any, List, Optional
-import pyprevent
+try:
+    import pyprevent
+except ImportError:
+    pyprevent = None
 
 def mmol_to_mg_dl_cholesterol(val_mmol: float) -> float:
     """Converts cholesterol from mmol/L to mg/dL."""
@@ -153,6 +156,20 @@ def calculate_prevent_risk(params: Dict[str, Any]) -> Dict[str, Any]:
     Computes AHA PREVENT 10-year and 30-year risk estimates using pyprevent.
     Strictly clamps variables to certified clinical equation boundaries.
     """
+    if pyprevent is None:
+        return {
+            "cvd_10yr": 0.0,
+            "ascvd_10yr": 0.0,
+            "heart_failure_10yr": 0.0,
+            "cvd_30yr": None,
+            "ascvd_30yr": None,
+            "risk_category": "Калькулятор недоступен",
+            "risk_color": "rose",
+            "risk_badge": "Требуется pyprevent",
+            "risk_modifiers": [],
+            "recommendations": ["Модуль pyprevent не установлен. Установите его: pip install pyprevent"]
+        }
+
     sex = str(params.get("sex", "male")).lower()
     if sex not in ["male", "female"]:
         sex = "female" if "fem" in sex or "жен" in sex else "male"
