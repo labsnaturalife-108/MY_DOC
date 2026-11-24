@@ -263,6 +263,22 @@ export const api = {
     return res.json();
   },
 
+  async deleteMyAccount(): Promise<void> {
+    const res = await authFetch(`${API_BASE}/auth/me`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Не удалось удалить аккаунт");
+    }
+  },
+
+  async adminDeleteUser(userId: number): Promise<void> {
+    const res = await authFetch(`${API_BASE}/admin/users/${userId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Не удалось удалить пользователя");
+    }
+  },
+
   // Patients
   async getPatients(): Promise<Patient[]> {
     const res = await authFetch(`${API_BASE}/patients`);

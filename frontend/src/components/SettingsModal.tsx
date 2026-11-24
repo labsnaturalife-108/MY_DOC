@@ -23,6 +23,7 @@ import {
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -33,6 +34,9 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onRefreshStatus }) => {
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const { user, logout } = useAuth();
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [lmstudioUrl, setLmstudioUrl] = useState("http://localhost:1234/v1");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434/v1");
   
@@ -563,6 +567,74 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
             </div>
           </div>
+
+          {/* Account Danger Zone */}
+          {user && (
+            <div className="p-4 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/25 space-y-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-rose-700 dark:text-rose-400">
+                    {language === "ru" ? "Удаление аккаунта" : "Delete Account"}
+                  </h4>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-300/80 mt-0.5">
+                    {language === "ru"
+                      ? `Текущий аккаунт: ${user.email}. Все ваши пациенты, анализы и чаты будут удалены безвозвратно.`
+                      : `Current account: ${user.email}. All your patients, lab records and chats will be permanently deleted.`}
+                  </p>
+                </div>
+                {!confirmDeleteAccount && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteAccount(true)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition shrink-0 flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{language === "ru" ? "Удалить" : "Delete"}</span>
+                  </button>
+                )}
+              </div>
+
+              {confirmDeleteAccount && (
+                <div className="pt-2 border-t border-rose-200/80 dark:border-rose-900/60 flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">
+                    {language === "ru" ? "Точно удалить аккаунт навсегда?" : "Permanently delete this account?"}
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={isDeletingAccount}
+                      onClick={() => setConfirmDeleteAccount(false)}
+                      className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                    >
+                      {language === "ru" ? "Отмена" : "Cancel"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingAccount}
+                      onClick={async () => {
+                        setIsDeletingAccount(true);
+                        try {
+                          await api.deleteMyAccount();
+                          setConfirmDeleteAccount(false);
+                          onClose();
+                          logout();
+                        } catch (err: any) {
+                          alert(err?.message || "Ошибка удаления аккаунта");
+                        } finally {
+                          setIsDeletingAccount(false);
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition disabled:opacity-60"
+                    >
+                      {isDeletingAccount
+                        ? (language === "ru" ? "Удаление..." : "Deleting...")
+                        : (language === "ru" ? "Да, удалить" : "Yes, delete")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button

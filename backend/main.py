@@ -212,6 +212,49 @@ def get_me(current_user: models.User = Depends(get_current_user)):
         "created_at": current_user.created_at,
     }
 
+def _delete_user_completely(db: Session, user: models.User):
+    # Clean up uploaded files and Chroma collections for user's patients
+    user_patients = db.query(models.Patient).filter(models.Patient.user_id == user.id).all()
+    for p in user_patients:
+        try:
+            rag_engine.delete_patient_collection(p.id)
+        except Exception:
+            pass
+        patient_dir = os.path.join(UPLOAD_DIR, f"patient_{p.id}")
+        if os.path.exists(patient_dir):
+            try:
+                shutil.rmtree(patient_dir)
+            except Exception:
+                pass
+    # Detach auth_events FK before deleting user (required by PostgreSQL FK constraint)
+    db.query(models.AuthEvent).filter(models.AuthEvent.user_id == user.id).update(
+        {models.AuthEvent.user_id: None}, synchronize_session=False
+    )
+    db.delete(user)
+    db.commit()
+
+@app.delete("/api/auth/me")
+def delete_my_account(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    email = current_user.email
+    _delete_user_completely(db, current_user)
+    return {"success": True, "message": f"Аккаунт {email} успешно удалён"}
+
+@app.delete("/api/admin/users/{user_id}")
+def admin_delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin),
+):
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    email = target.email
+    _delete_user_completely(db, target)
+    return {"success": True, "message": f"Пользователь {email} удалён"}
+
 # --- Public Visit Tracking & Owner Admin Monitor ---
 @app.post("/api/analytics/visit")
 def track_visit(request: Request, db: Session = Depends(get_db)):

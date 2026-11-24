@@ -14,7 +14,8 @@ import {
   Clock,
   Globe,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -28,6 +29,7 @@ import {
 } from "recharts";
 import { AdminStatsResponse, api } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface AdminMonitorModalProps {
   isOpen: boolean;
@@ -62,12 +64,37 @@ function shortAgent(ua?: string | null): string {
 
 export const AdminMonitorModal: React.FC<AdminMonitorModalProps> = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
+  const { user: currentUser, logout } = useAuth();
   const isRu = language === "ru";
 
   const [stats, setStats] = useState<AdminStatsResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"users" | "events">("users");
+
+  const handleDeleteUser = async (userId: number, email: string) => {
+    const confirmed = window.confirm(
+      isRu
+        ? `Удалить аккаунт ${email} и все его данные безвозвратно?`
+        : `Permanently delete account ${email} and all its data?`
+    );
+    if (!confirmed) return;
+    setDeletingUserId(userId);
+    try {
+      await api.adminDeleteUser(userId);
+      if (currentUser && currentUser.id === userId) {
+        onClose();
+        logout();
+        return;
+      }
+      await loadStats();
+    } catch (err: any) {
+      alert(err?.message || "Ошибка удаления");
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
 
   const loadStats = async () => {
     setLoading(true);
@@ -260,6 +287,7 @@ export const AdminMonitorModal: React.FC<AdminMonitorModalProps> = ({ isOpen, on
                         <th className="px-4 py-2.5">{isRu ? "Последний вход" : "Last Login"}</th>
                         <th className="px-4 py-2.5 text-center">{isRu ? "Входов" : "Logins"}</th>
                         <th className="px-4 py-2.5 text-center">{isRu ? "Пациенты / Док. / Чат" : "Patients / Docs / Msgs"}</th>
+                        <th className="px-4 py-2.5 text-right">{isRu ? "Действие" : "Action"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80">
@@ -301,6 +329,21 @@ export const AdminMonitorModal: React.FC<AdminMonitorModalProps> = ({ isOpen, on
                                 {u.messages_count}
                               </span>
                             </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              disabled={deletingUserId === u.id}
+                              onClick={() => handleDeleteUser(u.id, u.email)}
+                              title={isRu ? "Удалить аккаунт" : "Delete account"}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition disabled:opacity-50"
+                            >
+                              {deletingUserId === u.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
                           </td>
                         </tr>
                       ))}
