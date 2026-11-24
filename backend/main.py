@@ -718,6 +718,35 @@ async def upload_document(
         "extracted_metrics_count": added_metrics_count
     }
 
+@app.delete("/api/patients/{patient_id}/documents")
+def delete_all_documents(
+    patient_id: int,
+    folder_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    get_owned_patient(db, patient_id, current_user.id)
+    query = db.query(models.Document).filter(models.Document.patient_id == patient_id)
+    if folder_id is not None:
+        query = query.filter(models.Document.folder_id == folder_id)
+    docs = query.all()
+    deleted_count = len(docs)
+
+    for doc in docs:
+        try:
+            rag_engine.delete_document(patient_id, doc.id)
+        except Exception:
+            pass
+        if doc.filepath and os.path.exists(doc.filepath):
+            try:
+                os.remove(doc.filepath)
+            except Exception:
+                pass
+        db.delete(doc)
+
+    db.commit()
+    return {"success": True, "deleted_count": deleted_count}
+
 @app.delete("/api/patients/{patient_id}/documents/{doc_id}")
 def delete_document(
     patient_id: int,

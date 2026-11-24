@@ -37,6 +37,7 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const loadFoldersAndDocs = async () => {
     try {
@@ -182,6 +183,33 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       alert((language === "ru" ? "Ошибка удаления: " : "Delete error: ") + (err.message || err));
     } finally {
       setDeletingDocId(null);
+    }
+  };
+
+  const handleDeleteAllDocs = async () => {
+    if (documents.length === 0 || isDeletingAll) return;
+    const scopeLabel = selectedFolderId !== null
+      ? (language === "ru" ? "из текущей папки" : "in this folder")
+      : (language === "ru" ? "у этого пациента" : "for this patient");
+    const msg = language === "ru"
+      ? `Удалить ВСЕ файлы (${documents.length} шт.) ${scopeLabel} и связанные с ними показатели анализов? Это действие необратимо.`
+      : `Delete ALL files (${documents.length}) ${scopeLabel} and their extracted lab metrics? This cannot be undone.`;
+    if (!confirm(msg)) return;
+
+    setIsDeletingAll(true);
+    try {
+      await api.deleteAllDocuments(patient.id, selectedFolderId ?? undefined);
+      setDocuments([]);
+      setUploadResult(null);
+      const fList = await api.getFolders(patient.id);
+      setFolders(fList);
+      if (onRefreshLabs) {
+        onRefreshLabs();
+      }
+    } catch (err: any) {
+      alert((language === "ru" ? "Ошибка массового удаления: " : "Bulk delete error: ") + (err.message || err));
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -346,11 +374,32 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
 
       {/* Documents List */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
             {t.folders.fileList} ({documents.length})
           </h3>
+
+          {documents.length > 0 && (
+            <button
+              type="button"
+              disabled={isDeletingAll}
+              onClick={handleDeleteAllDocs}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-rose-200 dark:border-rose-900/60 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-400 flex items-center gap-1.5 transition disabled:opacity-60"
+            >
+              {isDeletingAll ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{language === "ru" ? "Удаление..." : "Deleting..."}</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{language === "ru" ? "Удалить все" : "Delete all"}</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {documents.length === 0 ? (

@@ -440,6 +440,16 @@ export const api = {
     invalidateApiCache(`folders:${patientId}`, `docs:${patientId}`, `docDetail:${patientId}:${docId}`, `labs:${patientId}`, `prevent:${patientId}`);
   },
 
+  async deleteAllDocuments(patientId: number, folderId?: number): Promise<{ success: boolean; deleted_count: number }> {
+    const url = folderId !== undefined
+      ? `${API_BASE}/patients/${patientId}/documents?folder_id=${folderId}`
+      : `${API_BASE}/patients/${patientId}/documents`;
+    const res = await authFetch(url, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete all documents");
+    invalidateApiCache(`folders:${patientId}`, `docs:${patientId}`, `docDetail:${patientId}:`, `labs:${patientId}`, `prevent:${patientId}`);
+    return res.json();
+  },
+
   async getDocumentDetails(patientId: number, docId: number): Promise<DocumentDetail> {
     return cachedRequest(`docDetail:${patientId}:${docId}`, async () => {
       const res = await authFetch(`${API_BASE}/patients/${patientId}/documents/${docId}`);
