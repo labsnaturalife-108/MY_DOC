@@ -556,12 +556,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">xAI Grok API Key</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">xAI Grok API Key (Grok 2)</label>
                 <input
                   type="password"
                   value={keys.api_key_grok}
                   onChange={(e) => setKeys({ ...keys, api_key_grok: e.target.value })}
                   placeholder="xai-..."
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Alibaba Qwen API Key (Qwen 2.5 72B)</label>
+                <input
+                  type="password"
+                  value={keys.api_key_qwen}
+                  onChange={(e) => setKeys({ ...keys, api_key_qwen: e.target.value })}
+                  placeholder="sk-..."
                   className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-zinc-500 font-mono"
                 />
               </div>

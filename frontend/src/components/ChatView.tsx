@@ -19,7 +19,10 @@ import {
   Globe,
   Copy,
   Check,
-  Printer
+  Printer,
+  ChevronDown,
+  Key,
+  Cloud
 } from "lucide-react";
 import { Patient, ChatSession, ChatMessage, AIModel, api, API_BASE, authFetch } from "@/lib/api";
 import { MedicalMarkdown } from "./MedicalMarkdown";
@@ -63,9 +66,23 @@ export const ChatView: React.FC<ChatViewProps> = ({
     language === "ru" ? "Использованные источники" : "Cited Sources"
   );
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const modelMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setIsModelMenuOpen(false);
+      }
+    };
+    if (isModelMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isModelMenuOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -576,17 +593,123 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 {t.chat.activeModel}
               </span>
               <div className="flex items-center gap-2">
-                <select
-                  value={currentModelId}
-                  onChange={(e) => handleModelChange(e.target.value)}
-                  className="bg-white dark:bg-zinc-950 border border-zinc-350 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-bold text-xs rounded-xl px-2.5 py-1.5 outline-none focus:border-zinc-500 cursor-pointer shadow-xs"
-                >
-                  {models.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.is_local ? (language === "ru" ? "🏠 (Локально)" : "🏠 (Local)") : (language === "ru" ? "☁️ (Облако)" : "☁️ (Cloud)")}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative" ref={modelMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsModelMenuOpen((v) => !v)}
+                    className="bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-950 dark:text-zinc-100 font-semibold text-xs rounded-xl px-3 py-1.5 outline-none flex items-center gap-2 cursor-pointer shadow-xs transition min-w-[210px] justify-between"
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      {currentModel.is_local ? (
+                        <Cpu className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                      ) : (
+                        <Cloud className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                      )}
+                      <span className="truncate">{currentModel.name.replace(/^[🟢⚪]\s*/, "")}</span>
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform shrink-0 ${isModelMenuOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {isModelMenuOpen && (
+                    <div className="absolute left-0 top-full mt-2 w-[340px] max-h-[70vh] overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-3 space-y-3 z-50">
+                      {/* Local & Built-in Section (matches SettingsModal card) */}
+                      <div className="bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-1">
+                        <div className="px-2 py-1 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Cpu className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                            {language === "ru" ? "Локальный LM Studio и Встроенный" : "Local LM Studio & Built-in"}
+                          </span>
+                          <span className={`text-[10px] font-medium ${isLocalOnline ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400"}`}>
+                            {isLocalOnline ? (language === "ru" ? "Онлайн" : "Online") : (language === "ru" ? "Офлайн" : "Offline")}
+                          </span>
+                        </div>
+                        {models.filter((m) => m.is_local).map((m) => {
+                          const isSelected = m.id === currentModelId;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                handleModelChange(m.id);
+                                setIsModelMenuOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition border ${
+                                isSelected
+                                  ? "bg-zinc-900/10 dark:bg-white/10 border-zinc-900/15 dark:border-white/15 text-zinc-950 dark:text-white font-semibold"
+                                  : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/80"
+                              }`}
+                            >
+                              <span className="truncate">{m.name.replace(/^[🟢⚪]\s*/, "")}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Cloud API Models Section (matches SettingsModal Cloud API Keys card) */}
+                      <div className="bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
+                        <div className="px-2 py-0.5 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                          <span>{language === "ru" ? "Облачные модели (API)" : "Cloud Models (API)"}</span>
+                        </div>
+
+                        {[
+                          { key: "openai", label: "OpenAI (GPT-4o)", providers: ["openai"] },
+                          { key: "anthropic", label: "Anthropic (Claude)", providers: ["anthropic"] },
+                          { key: "gemini", label: "Google Gemini & Antigravity", providers: ["gemini", "antigravity"] },
+                          { key: "deepseek", label: "DeepSeek (V3, R1)", providers: ["deepseek"] },
+                          { key: "grok", label: "xAI Grok", providers: ["grok"] },
+                          { key: "qwen", label: "Alibaba Qwen", providers: ["qwen"] },
+                        ].map((group) => {
+                          const groupModels = models.filter((m) => !m.is_local && group.providers.includes(m.provider));
+                          if (groupModels.length === 0) return null;
+                          return (
+                            <div key={group.key} className="space-y-0.5">
+                              <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                {group.label}
+                              </div>
+                              {groupModels.map((m) => {
+                                const isSelected = m.id === currentModelId;
+                                const cleanLabel = m.name.replace(/^(OpenAI|Anthropic|Google|DeepSeek|xAI|Qwen):\s*/i, "");
+                                return (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleModelChange(m.id);
+                                      setIsModelMenuOpen(false);
+                                    }}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between gap-2 transition border ${
+                                      isSelected
+                                        ? "bg-zinc-900/10 dark:bg-white/10 border-zinc-900/15 dark:border-white/15 text-zinc-950 dark:text-white font-semibold"
+                                        : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/80"
+                                    }`}
+                                  >
+                                    <span className="truncate">{cleanLabel}</span>
+                                    {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Footer button to open API Key Settings directly */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsModelMenuOpen(false);
+                          onOpenSettings();
+                        }}
+                        className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                        <span>{language === "ru" ? "Настроить API ключи" : "Configure API Keys"}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {currentModel.is_local && (
                   <span
