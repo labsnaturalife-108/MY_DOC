@@ -6,9 +6,11 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 _env_db_url = (os.environ.get("DATABASE_URL") or "").strip()
 if _env_db_url:
-    # SQLAlchemy 2.0 requires postgresql:// instead of legacy postgres://
+    # Use psycopg2 driver explicitly for full compatibility with Supabase Transaction Pooler (PgBouncer)
     if _env_db_url.startswith("postgres://"):
-        _env_db_url = "postgresql://" + _env_db_url[len("postgres://"):]
+        _env_db_url = "postgresql+psycopg2://" + _env_db_url[len("postgres://"):]
+    elif _env_db_url.startswith("postgresql://"):
+        _env_db_url = "postgresql+psycopg2://" + _env_db_url[len("postgresql://"):]
     DATABASE_URL = _env_db_url
     IS_SQLITE = DATABASE_URL.startswith("sqlite")
 else:

@@ -1,0 +1,16 @@
+.git
+.DS_Store
+backend/data
+backend/venv
+backend/__pycache__
+**/__pycache__
+*.pyc
+*.db
+*.log
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/.env.local
+portable
+Dockerfile
+hf_server.py
