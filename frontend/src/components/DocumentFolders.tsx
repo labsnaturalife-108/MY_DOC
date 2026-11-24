@@ -36,6 +36,7 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
 
   const loadFoldersAndDocs = async () => {
     try {
@@ -163,6 +164,7 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
 
   const handleDeleteDoc = async (docId: number) => {
     if (!confirm(t.folders.deleteConfirm)) return;
+    setDeletingDocId(docId);
     try {
       await api.deleteDocument(patient.id, docId);
       setDocuments((prev) => prev.filter((d) => d.id !== docId));
@@ -178,6 +180,8 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
       }
     } catch (err: any) {
       alert((language === "ru" ? "Ошибка удаления: " : "Delete error: ") + (err.message || err));
+    } finally {
+      setDeletingDocId(null);
     }
   };
 
@@ -392,11 +396,16 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
                   </span>
 
                   <button
+                    disabled={deletingDocId === doc.id}
                     onClick={() => handleDeleteDoc(doc.id)}
-                    className="p-2 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition"
+                    className="p-2 text-zinc-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition disabled:opacity-50"
                     title={t.folders.deleteFile}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    {deletingDocId === doc.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>

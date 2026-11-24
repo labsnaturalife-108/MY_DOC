@@ -28,6 +28,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminMonitorOpen, setIsAdminMonitorOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeletingPatient, setIsDeletingPatient] = useState(false);
   const [isLocalOnline, setIsLocalOnline] = useState(false);
@@ -223,7 +224,8 @@ export default function Home() {
 
   const handleCreatePatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPatientData.full_name) return;
+    if (!newPatientData.full_name || isCreatingPatient) return;
+    setIsCreatingPatient(true);
     try {
       const created = await api.createPatient(newPatientData);
       setPatients([created, ...patients]);
@@ -234,6 +236,8 @@ export default function Home() {
       setActiveTab("profile");
     } catch (err) {
       alert("Ошибка создания пациента: " + err);
+    } finally {
+      setIsCreatingPatient(false);
     }
   };
 
@@ -571,9 +575,11 @@ export default function Home() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold shadow transition"
+                  disabled={isCreatingPatient}
+                  className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5 disabled:opacity-60"
                 >
-                  {t.modals.createButton}
+                  {isCreatingPatient && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isCreatingPatient ? (language === "ru" ? "Создание..." : "Creating...") : t.modals.createButton}</span>
                 </button>
               </div>
             </form>

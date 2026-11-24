@@ -18,7 +18,8 @@ import {
   Plus, 
   Trash2, 
   ExternalLink, 
-  ShieldCheck 
+  ShieldCheck,
+  Loader2
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -62,6 +63,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
@@ -143,26 +145,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
   const handleSaveAll = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
+    setIsSaving(true);
     try {
-      await api.saveSetting("url_lmstudio", lmstudioUrl);
-      await api.saveSetting("url_ollama", ollamaUrl);
-      await api.saveSetting("medical_resources_config", JSON.stringify(medResources));
+      const ops: Promise<void>[] = [
+        api.saveSetting("url_lmstudio", lmstudioUrl),
+        api.saveSetting("url_ollama", ollamaUrl),
+        api.saveSetting("medical_resources_config", JSON.stringify(medResources)),
+      ];
 
       for (const [key, val] of Object.entries(keys)) {
         if (val && !val.includes("...")) {
-          await api.saveSetting(key, val);
+          ops.push(api.saveSetting(key, val));
         }
       }
+
+      await Promise.all(ops);
 
       setSavedSuccess(true);
       setTimeout(() => {
         setSavedSuccess(false);
         onClose();
-      }, 1000);
+      }, 900);
 
       if (onRefreshStatus) onRefreshStatus();
     } catch (err: any) {
       alert((language === "ru" ? "Ошибка сохранения: " : "Save error: ") + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -657,10 +667,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition"
+              disabled={isSaving}
+              className="px-5 py-2 bg-zinc-900 hover:bg-zinc-850 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition disabled:opacity-60"
             >
-              {savedSuccess ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : null}
-              {savedSuccess ? (language === "ru" ? "Сохранено!" : "Saved!") : t.settings.saveBtn}
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{language === "ru" ? "Сохранение..." : "Saving..."}</span>
+                </>
+              ) : savedSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-600" />
+                  <span>{language === "ru" ? "Сохранено!" : "Saved!"}</span>
+                </>
+              ) : (
+                <span>{t.settings.saveBtn}</span>
+              )}
             </button>
           </div>
         </form>

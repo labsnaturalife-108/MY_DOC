@@ -13,7 +13,8 @@ import {
   X,
   Scale,
   Ruler,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { Patient, api } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
@@ -314,7 +315,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({ patient, onUpdate, onD
               disabled={saving}
               className="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 font-medium rounded-xl text-sm flex items-center gap-2 shadow-md transition disabled:opacity-50"
             >
-              <Save className="w-4 h-4" />
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? t.common.saving : t.common.save}
             </button>
           </div>
