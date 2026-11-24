@@ -11,9 +11,10 @@ import { NutritionView } from "@/components/NutritionView";
 import { LifestyleView } from "@/components/LifestyleView";
 import { SettingsModal } from "@/components/SettingsModal";
 import { AdminMonitorModal } from "@/components/AdminMonitorModal";
+import { OnboardingGuide } from "@/components/OnboardingGuide";
 import { AuthView } from "@/components/AuthView";
 import { Patient, ChatSession, api } from "@/lib/api";
-import { User, UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { User, UserPlus, X, Sparkles, Loader2, Trash2, AlertTriangle, HelpCircle } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -27,6 +28,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<string>("chat"); // chat, profile, folders, labs, prevent
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminMonitorOpen, setIsAdminMonitorOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
@@ -117,6 +119,7 @@ export default function Home() {
       setActiveSessionId(null);
       setIsSettingsOpen(false);
       setIsAdminMonitorOpen(false);
+      setIsGuideOpen(false);
       setLoading(false);
       return;
     }
@@ -222,9 +225,17 @@ export default function Home() {
     }
   };
 
+  const handleCloseGuide = () => {
+    setIsGuideOpen(false);
+    if (typeof window !== "undefined" && user?.id) {
+      localStorage.setItem(`mydoc_onboarding_seen_${user.id}`, "1");
+    }
+  };
+
   const handleCreatePatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPatientData.full_name || isCreatingPatient) return;
+    const wasFirstPatient = patients.length === 0;
     setIsCreatingPatient(true);
     try {
       const created = await api.createPatient(newPatientData);
@@ -233,7 +244,15 @@ export default function Home() {
       setIsNewPatientModalOpen(false);
       setNewPatientData({ full_name: "", gender: "male" });
       await loadSessionsForPatient(created.id);
-      setActiveTab("profile");
+      setActiveTab("chat");
+
+      // Show interactive onboarding tour ONCE right after a new user creates their first patient
+      if (wasFirstPatient && typeof window !== "undefined" && user?.id) {
+        const seenKey = `mydoc_onboarding_seen_${user.id}`;
+        if (!localStorage.getItem(seenKey)) {
+          setIsGuideOpen(true);
+        }
+      }
     } catch (err) {
       alert("Ошибка создания пациента: " + err);
     } finally {
@@ -325,8 +344,17 @@ export default function Home() {
             )}
           </div>
 
-          {/* Top-Right Language Switcher */}
-          <div className="flex items-center">
+          {/* Top-Right Help Guide Button & Language Switcher */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsGuideOpen(true)}
+              title={language === "ru" ? "Интерактивный гайд по функциям" : "Interactive Feature Guide"}
+              className="w-8 h-8 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 hover:bg-zinc-300/80 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700/80 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition shadow-2xs"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+
             <div className="flex items-center bg-zinc-200/80 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/80 rounded-xl p-0.5 shadow-2xs">
               <button
                 onClick={() => setLanguage("ru")}
@@ -672,6 +700,14 @@ export default function Home() {
           onClose={() => setIsAdminMonitorOpen(false)}
         />
       )}
+
+      {/* Interactive New-User Onboarding Guide */}
+      <OnboardingGuide
+        isOpen={isGuideOpen}
+        onClose={handleCloseGuide}
+        onSelectTab={setActiveTab}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
     </div>
   );
 }
