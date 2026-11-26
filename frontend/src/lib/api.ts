@@ -332,14 +332,16 @@ export const api = {
 
   async trackVisit(): Promise<void> {
     try {
-      await fetch(`${API_BASE}/analytics/visit`, { method: "POST" });
+      await authFetch(`${API_BASE}/analytics/visit`, { method: "POST" });
     } catch {
       // ignore analytics errors
     }
   },
 
   async getAdminStats(): Promise<AdminStatsResponse> {
-    const res = await authFetch(`${API_BASE}/admin/stats`);
+    const res = await authFetch(`${API_BASE}/admin/stats?_t=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) throw new Error("Failed to fetch admin stats");
     return res.json();
   },

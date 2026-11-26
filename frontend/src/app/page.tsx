@@ -105,9 +105,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !sessionStorage.getItem("mydoc_visit_logged")) {
-      sessionStorage.setItem("mydoc_visit_logged", "1");
-      api.trackVisit();
+    if (typeof window !== "undefined") {
+      const todayKey = `mydoc_visit_logged_${new Date().toISOString().slice(0, 10)}`;
+      if (!sessionStorage.getItem(todayKey)) {
+        sessionStorage.setItem(todayKey, "1");
+        api.trackVisit();
+      }
     }
   }, []);
 

@@ -18,6 +18,7 @@ from .auth import (
     verify_password,
     create_access_token,
     get_current_user,
+    get_optional_user,
     get_current_user_or_query,
     require_admin,
     is_user_admin,
@@ -207,7 +208,23 @@ def login_user(data: schemas.UserLogin, request: Request, db: Session = Depends(
     }
 
 @app.get("/api/auth/me", response_model=schemas.UserResponse)
-def get_me(current_user: models.User = Depends(get_current_user)):
+def get_me(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    # Track returning authenticated sessions (throttled to once per 30 minutes)
+    now = datetime.utcnow()
+    if not current_user.last_login_at or (now - current_user.last_login_at) >= timedelta(minutes=30):
+        try:
+            current_user.last_login_at = now
+            current_user.login_count = (current_user.login_count or 0) + 1
+            db.commit()
+            _record_auth_event(db, "login", request, current_user)
+        except Exception as e:
+            db.rollback()
+            print(f"[Analytics] Session return log warning: {e}")
+
     return {
         "id": current_user.id,
         "email": current_user.email,
@@ -341,15 +358,22 @@ def admin_delete_user(
 
 # --- Public Visit Tracking & Owner Admin Monitor ---
 @app.post("/api/analytics/visit")
-def track_visit(request: Request, db: Session = Depends(get_db)):
-    _record_auth_event(db, "visit", request, None)
+def track_visit(
+    request: Request,
+    db: Session = Depends(get_db),
+    optional_user: Optional[models.User] = Depends(get_optional_user),
+):
+    _record_auth_event(db, "visit", request, optional_user)
     return {"ok": True}
 
 @app.get("/api/admin/stats")
 def get_admin_stats(
+    response: Response,
     db: Session = Depends(get_db),
     admin_user: models.User = Depends(require_admin),
 ):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
     now = datetime.utcnow()
     today_start = datetime(now.year, now.month, now.day)
     week_start = today_start - timedelta(days=6)

@@ -179,6 +179,19 @@ def get_current_user(
     return _resolve_user_from_token(token, db)
 
 
+def get_optional_user(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+) -> Optional[models.User]:
+    token = _extract_bearer_token(authorization)
+    if not token:
+        return None
+    try:
+        return _resolve_user_from_token(token, db)
+    except HTTPException:
+        return None
+
+
 def get_current_user_or_query(
     authorization: Optional[str] = Header(default=None),
     token: Optional[str] = Query(default=None),
