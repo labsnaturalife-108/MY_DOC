@@ -647,51 +647,32 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         })}
                       </div>
 
-                      {/* Cloud API Models Section (matches SettingsModal Cloud API Keys card) */}
-                      <div className="bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
-                        <div className="px-2 py-0.5 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      {/* Cloud API Models Section (matches SettingsModal 1-to-1) */}
+                      <div className="bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-1">
+                        <div className="px-2 py-1 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Key className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                           <span>{language === "ru" ? "Облачные модели (API)" : "Cloud Models (API)"}</span>
                         </div>
 
-                        {[
-                          { key: "openai", label: "OpenAI (GPT-4o)", providers: ["openai"] },
-                          { key: "anthropic", label: "Anthropic (Claude)", providers: ["anthropic"] },
-                          { key: "gemini", label: "Google Gemini & Antigravity", providers: ["gemini", "antigravity"] },
-                          { key: "deepseek", label: "DeepSeek (V3, R1)", providers: ["deepseek"] },
-                          { key: "grok", label: "xAI Grok", providers: ["grok"] },
-                          { key: "qwen", label: "Alibaba Qwen", providers: ["qwen"] },
-                        ].map((group) => {
-                          const groupModels = models.filter((m) => !m.is_local && group.providers.includes(m.provider));
-                          if (groupModels.length === 0) return null;
+                        {models.filter((m) => !m.is_local).map((m) => {
+                          const isSelected = m.id === currentModelId;
                           return (
-                            <div key={group.key} className="space-y-0.5">
-                              <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                {group.label}
-                              </div>
-                              {groupModels.map((m) => {
-                                const isSelected = m.id === currentModelId;
-                                const cleanLabel = m.name.replace(/^(OpenAI|Anthropic|Google|DeepSeek|xAI|Qwen):\s*/i, "");
-                                return (
-                                  <button
-                                    key={m.id}
-                                    type="button"
-                                    onClick={() => {
-                                      handleModelChange(m.id);
-                                      setIsModelMenuOpen(false);
-                                    }}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between gap-2 transition border ${
-                                      isSelected
-                                        ? "bg-zinc-900/10 dark:bg-white/10 border-zinc-900/15 dark:border-white/15 text-zinc-950 dark:text-white font-semibold"
-                                        : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/80"
-                                    }`}
-                                  >
-                                    <span className="truncate">{cleanLabel}</span>
-                                    {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                handleModelChange(m.id);
+                                setIsModelMenuOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition border ${
+                                isSelected
+                                  ? "bg-zinc-900/10 dark:bg-white/10 border-zinc-900/15 dark:border-white/15 text-zinc-950 dark:text-white font-semibold"
+                                  : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/80"
+                              }`}
+                            >
+                              <span className="truncate">{m.name}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                            </button>
                           );
                         })}
                       </div>

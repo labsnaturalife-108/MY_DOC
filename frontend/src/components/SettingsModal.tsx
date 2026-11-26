@@ -556,7 +556,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
             <div className="space-y-2.5">
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">OpenAI API Key (GPT-4o)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">OpenAI (GPT-4o)</label>
                 <input
                   type="password"
                   value={keys.api_key_openai}
@@ -567,7 +567,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Anthropic API Key (Claude 3.5 Sonnet)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Anthropic (Claude 3.5 Sonnet)</label>
                 <input
                   type="password"
                   value={keys.api_key_anthropic}
@@ -578,7 +578,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Google Gemini & Antigravity API Key</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Google Gemini & Antigravity</label>
                 <input
                   type="password"
                   value={keys.api_key_gemini}
@@ -589,7 +589,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">DeepSeek API Key (V3, R1)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">DeepSeek (V3 / R1)</label>
                 <input
                   type="password"
                   value={keys.api_key_deepseek}
@@ -600,7 +600,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">xAI Grok API Key (Grok 2)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">xAI Grok (Grok 2)</label>
                 <input
                   type="password"
                   value={keys.api_key_grok}
@@ -611,7 +611,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Alibaba Qwen API Key (Qwen 2.5 72B)</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-1 block">Alibaba Qwen (Qwen 2.5 72B)</label>
                 <input
                   type="password"
                   value={keys.api_key_qwen}
