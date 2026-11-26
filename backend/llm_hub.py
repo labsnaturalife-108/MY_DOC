@@ -7,12 +7,12 @@ DEFAULT_LMSTUDIO_URL = "http://localhost:1234/v1"
 DEFAULT_OLLAMA_URL = "http://localhost:11434/v1"
 
 STATIC_CLOUD_MODELS = [
-    {"id": "gpt-4o", "name": "OpenAI (GPT-4o)", "provider": "openai", "is_local": False},
-    {"id": "claude-3-5-sonnet", "name": "Anthropic (Claude 3.5 Sonnet)", "provider": "anthropic", "is_local": False},
-    {"id": "gemini-3.8-flash", "name": "Google Gemini & Antigravity", "provider": "gemini", "is_local": False},
-    {"id": "deepseek-chat", "name": "DeepSeek (V3 / R1)", "provider": "deepseek", "is_local": False},
-    {"id": "grok-2", "name": "xAI Grok (Grok 2)", "provider": "grok", "is_local": False},
-    {"id": "qwen-2.5-72b", "name": "Alibaba Qwen (Qwen 2.5 72B)", "provider": "qwen", "is_local": False},
+    {"id": "gpt-4o", "name": "OpenAI (ChatGPT)", "provider": "openai", "is_local": False},
+    {"id": "claude-3-5-sonnet", "name": "Anthropic (Claude)", "provider": "anthropic", "is_local": False},
+    {"id": "gemini-3.8-flash", "name": "Google Gemini", "provider": "gemini", "is_local": False},
+    {"id": "deepseek-chat", "name": "DeepSeek", "provider": "deepseek", "is_local": False},
+    {"id": "grok-2", "name": "xAI Grok", "provider": "grok", "is_local": False},
+    {"id": "qwen-2.5-72b", "name": "Alibaba Qwen", "provider": "qwen", "is_local": False},
     {"id": "demo-doctor", "name": "MY_DOC Demo (Встроенный ассистент)", "provider": "demo", "is_local": True},
 ]
 
