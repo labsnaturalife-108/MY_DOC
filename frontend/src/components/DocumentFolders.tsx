@@ -311,7 +311,7 @@ export const DocumentFolders: React.FC<DocumentFoldersProps> = ({ patient, onRef
           onChange={handleFileUpload}
           disabled={uploading}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
-          accept=".pdf,.png,.jpg,.jpeg,.webp,.tiff,.bmp,.txt,.md,.csv,.doc,.docx,image/*,application/pdf"
+          accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif,.tiff,.bmp,.txt,.md,.csv,.doc,.docx,image/*,application/pdf"
         />
         <div className="flex flex-col items-center justify-center pointer-events-none">
           {uploading ? (

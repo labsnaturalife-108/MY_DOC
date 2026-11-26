@@ -62,7 +62,7 @@ BIOMARKER_DEFS = [
         r'(?<![a-zA-Zа-яА-Я0-9])(?:общ\s*белтък|общий\s*белок|белок\s*общий|total\s*protein)(?![a-zA-Zа-яА-Я0-9])(?:\s*\([^)]*\))?[\s:=|\t\n]+(?:s[\s\t\n]+)?([0-9]+(?:[.,][0-9]+)?)',
     ]),
     ('CMP', 'Альбумин', 'г/л', 35.0, 52.0, [
-        r'(?<![a-zA-Zа-яА-Я0-9])(?:албумин|альбумин|albumin)(?![a-zA-Zа-яА-Я0-9])(?:\s*\([^)]*\))?[\s:=|\t\n]+(?:s[\s\t\n]+)?([0-9]+(?:[.,][0-9]+)?)',
+        r'(?<![a-zA-Zа-яА-Я0-9])(?:албумин|альбумин|alb[uú]mina?|albumin)(?![a-zA-Zа-яА-Я0-9])(?:\s*\([^)]*\))?[\s:=|\t\n]+(?:s[\s\t\n]+)?([0-9]+(?:[.,][0-9]+)?)',
     ]),
     ('CMP', 'Натрий (Na)', 'ммоль/л', 135.0, 148.0, [
         r'(?<![a-zA-Zа-яА-Я0-9])(?:натрий|sodium|(?<![а-яА-Я])na)(?![a-zA-Zа-яА-Я0-9])(?:\s*\([^)]*\))?[\s:=|\t\n]+(?:s[\s\t\n]+)?([0-9]+(?:[.,][0-9]+)?)',
@@ -177,6 +177,8 @@ def _guess_mime_type(filename: str) -> str:
         "jpeg": "image/jpeg",
         "png": "image/png",
         "webp": "image/webp",
+        "heic": "image/heic",
+        "heif": "image/heif",
         "tiff": "image/tiff",
         "bmp": "image/bmp",
     }.get(ext, "application/octet-stream")
@@ -265,21 +267,58 @@ def _ocr_with_openai(filepath: str, mime_type: str, api_key: str) -> str:
     return ""
 
 
+def _prepare_image_for_ocrspace(filepath: str, filename: str):
+    """Compresses large images (>900KB) to JPEG using Pillow so free OCR.space accepts them."""
+    ext = (filename.lower().split(".")[-1] if "." in filename else "").strip()
+    with open(filepath, "rb") as f:
+        raw_bytes = f.read()
+
+    if ext == "pdf":
+        if len(raw_bytes) > 1_000_000:
+            return None, filename, "application/pdf"
+        return raw_bytes, filename, "application/pdf"
+
+    # Try Pillow conversion/compression for HEIC or images > 900KB
+    if len(raw_bytes) > 900_000 or ext in ("heic", "heif", "webp", "tiff", "bmp"):
+        try:
+            import io
+            from PIL import Image, ImageOps
+            try:
+                import pillow_heif
+                pillow_heif.register_heif_opener()
+            except Exception:
+                pass
+            img = Image.open(io.BytesIO(raw_bytes))
+            img = ImageOps.exif_transpose(img).convert("RGB")
+            img.thumbnail((1800, 1800))
+            out = io.BytesIO()
+            img.save(out, format="JPEG", quality=82, optimize=True)
+            compressed = out.getvalue()
+            if len(compressed) <= 980_000:
+                base = filename.rsplit(".", 1)[0] if "." in filename else filename
+                return compressed, f"{base}.jpg", "image/jpeg"
+        except Exception as e:
+            print(f"[Image Compress warning]: {e}")
+
+    if len(raw_bytes) > 1_000_000:
+        return None, filename, _guess_mime_type(filename)
+    return raw_bytes, filename, _guess_mime_type(filename)
+
+
 def _ocr_with_ocrspace(filepath: str, filename: str) -> str:
     """Zero-config free cloud OCR fallback (works on Linux/Vercel without API keys)."""
     try:
-        file_size = os.path.getsize(filepath)
-        if file_size > 1_000_000:
+        payload_bytes, send_name, send_mime = _prepare_image_for_ocrspace(filepath, filename)
+        if not payload_bytes:
             return ""
         api_key = os.environ.get("OCR_SPACE_API_KEY", "helloworld")
-        with open(filepath, "rb") as f:
-            resp = httpx.post(
-                "https://api.ocr.space/parse/image",
-                headers={"apikey": api_key},
-                data={"OCREngine": "2", "isTable": "true", "scale": "true"},
-                files={"file": (filename, f, _guess_mime_type(filename))},
-                timeout=25.0,
-            )
+        resp = httpx.post(
+            "https://api.ocr.space/parse/image",
+            headers={"apikey": api_key},
+            data={"OCREngine": "2", "isTable": "true", "scale": "true"},
+            files={"file": (send_name, payload_bytes, send_mime)},
+            timeout=25.0,
+        )
         if resp.status_code == 200:
             data = resp.json()
             parsed = data.get("ParsedResults") or []
@@ -371,7 +410,7 @@ def extract_text_from_file(filepath: str, filename: str, api_keys: Optional[Dict
     ext = filename.lower().split(".")[-1]
     if ext == "pdf":
         return extract_text_from_pdf(filepath, filename=filename, api_keys=api_keys)
-    elif ext in ["png", "jpg", "jpeg", "webp", "tiff", "bmp"]:
+    elif ext in ["png", "jpg", "jpeg", "webp", "heic", "heif", "tiff", "bmp"]:
         ocr_text = extract_text_from_image(filepath, filename=filename, api_keys=api_keys)
         if ocr_text:
             return f"--- Распознанный текст исследования ({filename}) ---\n{ocr_text}"

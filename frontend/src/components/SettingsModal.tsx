@@ -627,16 +627,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
           <div className="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 flex-wrap">
                   <Plug className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  {language === "ru"
-                    ? "Подключение через MCP (ChatGPT / Claude / Gemini без API-ключей)"
-                    : "Connect via MCP (ChatGPT / Claude / Gemini without API keys)"}
+                  <span>
+                    {language === "ru"
+                      ? "Подключение через MCP (ChatGPT / Claude / Gemini)"
+                      : "Connect via MCP (ChatGPT / Claude / Gemini)"}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-bold">
+                    READ / WRITE
+                  </span>
                 </span>
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
                   {language === "ru"
-                    ? "Используйте свою обычную подписку ChatGPT, Claude, Gemini CLI или Cursor — ИИ сможет напрямую читать ваши анализы, медкарту и считать риски PREVENT без покупки API-ключей."
-                    : "Connect your regular ChatGPT, Claude, Gemini CLI, or Cursor account — the AI can directly read your lab results, patient profile, and calculate PREVENT risk with zero API keys."}
+                    ? "Полноценный двусторонний доступ без API-ключей: ваш обычный ChatGPT, Claude или Gemini может читать анализы и медкарту, а также сам создавать пациентов, загружать расшифрованные анализы и добавлять показатели в графики."
+                    : "Full two-way access without API keys: your regular ChatGPT, Claude, or Gemini can read labs & profiles AND create patients, upload reports, and record biomarkers directly into your charts."}
                 </p>
               </div>
             </div>
